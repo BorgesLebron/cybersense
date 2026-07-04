@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberSense: Daily Digital Awareness Brief | May 6, 2026</title>
+
+    <meta property="og:title" content="Mass Exploitation Surge: cPanel, Linux Kernel, and Fortinet EMS | May 6, 2026"/>
+    <meta property="og:description" content="A critical authentication bypass in cPanel and WHM (CVE-2026-41940, CVSS 9.8) is enabling mass exploitation across thousands of exposed hosting servers, with the Sorry ransomware deploying as the primary payload and confirmed victims across government, military, and MSP sectors. Simultaneously, CISA has added a Linux kernel local privilege escalation (CVE-2026-31431) to its KEV catalog, affecting every major distribution since 2017 with a federal patch deadline of May 15. FortiClient EMS accumulates a second CISA KEV entry as CVE-2026-35616 extends an existing RCE into a chained attack path through the endpoint management plane. The shared attack surface is the management layer itself."/>
+    <meta property="og:image" content="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png"/>
+    <meta property="og:url" content="https://cybersense.solutions/newsletter/2026/May/05062026_edition118.html"/>
+    <meta property="og:type" content="article" />
+    <link rel="icon" type="image/png" href="/assets/csicon.png">
+    <link rel="apple-touch-icon" href="/assets/csicon.png">
+    <meta name="apple-mobile-web-app-title" content="Hector Borges">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+        body {
+            background-color: #111827;
+            background-image:
+                linear-gradient(135deg, rgba(29, 78, 216, 0.0) 25%, rgba(29, 78, 216, 0.05) 50%, rgba(29, 78, 216, 0.0) 75%),
+                linear-gradient(-135deg, rgba(29, 78, 216, 0.0) 25%, rgba(29, 78, 216, 0.05) 50%, rgba(29, 78, 216, 0.0) 75%),
+                radial-gradient(circle at 10% 50%, rgba(30, 60, 100, 0.25) 0%, rgba(30, 60, 100, 0.0) 50%),
+                radial-gradient(circle at 90% 40%, rgba(0, 150, 255, 0.15) 0%, rgba(0, 150, 255, 0.0) 30%),
+                linear-gradient(0deg, transparent 24%, rgba(60, 60, 60, 0.1) 25%, rgba(60, 60, 60, 0.1) 26%, transparent 27%),
+                linear-gradient(90deg, transparent 24%, rgba(60, 60, 60, 0.1) 25%, rgba(60, 60, 60, 0.1) 26%, transparent 27%);
+            background-size:
+                400px 400px,
+                400px 400px,
+                100% 100%,
+                100% 100%,
+                50px 50px,
+                50px 50px;
+            background-attachment: fixed;
+            color: #e0e7ff;
+            font-family: 'Inter', sans-serif;
+        }
+        .newsletter-container {
+            background-color: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        .section-card {
+            background-color: rgba(0, 0, 0, 0.3) !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            height: 100%;
+            border-color: rgba(255, 255, 255, 0.1) !important;
+        }
+        .section-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+        .text-gray-900, .text-gray-800, .text-gray-700 {
+            color: #e0e7ff !important;
+        }
+        .text-blue-800 {
+            color: #38bdf8 !important;
+        }
+        .text-blue-700 {
+            color: #93c5fd !important;
+        }
+        a.text-blue-700:hover {
+            color: #bfdbfe !important;
+        }
+        .border-indigo-600 {
+            border-color: #38bdf8 !important;
+        }
+        .libutton {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 7px;
+            text-align: center;
+            outline: none;
+            text-decoration: none !important;
+            color: #ffffff !important;
+            width: 300px;
+            height: 50px;
+            border-radius: 30px;
+            background-color: #0A66C2;
+            font-family: "SF Pro Text", Helvetica, sans-serif;
+            font-weight: 500;
+            transition: background-color 0.15s ease-in-out;
+        }
+        .libutton:hover {
+            background-color: #00FFFF;
+        }
+        hr {
+            border-top: 2px solid rgba(255, 255, 255, 0.1) !important;
+            margin-top: 40px !important;
+            border-bottom: none !important;
+            margin-bottom: 40px !important;
+        }
+        h1 {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 7px;
+            text-align: center;
+            color: #ffffff !important;
+            font-family: georgia;
+        }
+        h2 {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 7px;
+            text-align: center;
+            color: #0080ff !important;
+            font-family: georgia;
+        }
+        h3 {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 7px;
+            text-align: left;
+            color: #66B2FF !important;
+            font-family: georgia;
+        }
+        .edition-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #0e7490;
+            border-radius: 99px;
+            padding: 4px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #38bdf8;
+        }
+    </style>
+
+</head>
+
+<body class="p-4 sm:p-8">
+    <div class="newsletter-container max-w-5xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+        <div class="flex justify-center items-center w-full py-0">
+                    <img
+                        src="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png"
+                        alt="CyberSense Newsletter Icon"
+                        class="rounded-full shadow-xl w-48 h-48 object-cover"
+                        onerror="this.onerror=null; this.src='https://placehold.co/192x192/4f46e5/ffffff?text=CS'"
+                    >
+        </div>
+        <!-- Date + Badge -->
+        <div class="flex justify-between items-center mt-4 mb-2">
+            <span class="edition-badge">Edition 118</span>
+            <span class="text-gray-700 text-base font-semibold">May 6, 2026</span>
+        </div>
+        <section class="mb-5 pb-6 border-b-4 border-cyan-700">
+        </section>
+        <header class="text-center mb-4 pb-5 border-b-4 border-cyan-700">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight tracking-tight">
+                Daily Digital Awareness Brief
+            </h1>
+        </header>
+        <div class="mb-8 mt-10">
+            <h2 class="text-4xl sm:text-4xl font-extrabold text-cyan-600 leading-tight tracking-tight text-center">
+                Mass Exploitation Surge: cPanel, Linux Kernel, and Fortinet EMS
+            </h2>
+        </div>
+        <section class="mb-12">
+            <div>
+                <p class="text-base text-gray-700 mb-4 leading-relaxed">
+                    A critical authentication bypass in cPanel and WHM (CVE-2026-41940, CVSS 9.8) has enabled mass exploitation across 8,859 confirmed internet-facing hosts since late February, with the "Sorry" ransomware deploying as the primary payload and government, military, and MSP sectors among the confirmed targets. Compounding the threat landscape, CISA has added CVE-2026-31431 to its Known Exploited Vulnerabilities catalog, a Linux kernel local privilege escalation affecting every major distribution since 2017 that requires federal agencies to patch by May 15. Simultaneously, FortiClient EMS accumulates a second CISA KEV entry as CVE-2026-35616, a privilege escalation flaw, joins an existing SQL injection RCE in the same product, creating a chained exploitation path through the endpoint management server.
+                </p>
+                <p class="text-base text-gray-700 leading-relaxed">
+                    The structural thread connecting all three is the management plane, web hosting control panels, kernel-level cryptographic subsystems, and endpoint management consoles are the shared attack surface. Each represents a trust relationship that attackers are exploiting: the platform designed to administer the environment becomes the vector for compromise. The posture question is not whether your vulnerable instances are patched, but whether your incident response procedures account for the scenario in which the management tool itself is the entry point and whether your team can recognize the difference between a legitimate admin session and an adversary using your own tools against you.
+                </p>
+            </div>
+        </section>
+        <div class="mb-8">
+            <div class="section-card p-6 rounded-xl border w-full">
+                <h2 class="text-3xl font-bold text-cyan-600 mb-6 flex items-center border-b pb-2">
+                    Situational Awareness
+                </h2>
+
+                <h3 class="text-xl font-semibold text-teal-400 mb-1">cPanel/WHM: Mass Exploitation Deploys Sorry Ransomware Across 8,859 Hosts</h3>
+                <p class="text-gray-800 mb-2 text-sm">
+                    Following on a story we cover Monday (Edition116): CVE-2026-41940 (CVSS 9.8) is a CRLF injection vulnerability in cPanel and WHM that allows unauthenticated attackers to manipulate the <code>whostmgrsession</code> cookie, injecting raw carriage-return and line-feed characters to impersonate the root administrator and bypass authentication entirely. Censys has tracked confirmed exploitation across 8,859 exposed instances since weaponization began in late February. The "Sorry" ransomware, a Go-based Linux encryptor that appends <code>.sorry</code> extensions to encrypted files, is the primary post-exploitation payload, with targeted campaigns against government and military entities in Southeast Asia and MSP and hosting providers globally.
+                </p>
+                <p class="text-gray-800 mb-2 text-sm">
+                    cPanel released remediation on April 28; any unpatched instance should be treated as potentially compromised. Organizations managing internet-facing cPanel or WHM infrastructure should audit session logs for anomalous authentication patterns, cookie manipulation indicators, and root-level sessions from unexpected IP addresses. Implement WAF rules targeting CRLF injection patterns (<code>\r\n</code>, <code>%0d%0a</code>) in cookie headers and HTTP parameters. MSPs managing client hosting environments should treat this as a supply chain risk across their entire client portfolio, unpatched instances in any client environment represent lateral exposure.
+                </p>
+                <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" class="font-serif text-blue-400 mb-1 text-md font-base tracking-wider block">CISA KEV Catalog ›</a>
+
+                <hr class="my-6">
+
+                <h3 class="text-xl font-semibold text-teal-400 mb-1">Linux Kernel: CISA KEV Entry for Root Privilege Escalation in the Cryptographic Subsystem</h3>
+                <p class="text-gray-800 mb-2 text-sm">
+                    CVE-2026-31431 (CVSS 7.8) is a local privilege escalation in the Linux kernel's AF_ALG cryptographic subsystem, present in every major distribution since 2017. The flaw in the <code>algif_aead</code> module allows any unprivileged local user to achieve root access via improper memory handling, a working 732-byte Python proof-of-concept is publicly available, and Go and Rust variants have appeared in open-source repositories. CISA added the vulnerability to the Known Exploited Vulnerabilities catalog with a federal patch deadline of May 15, 2026.
+                </p>
+                <p class="text-gray-800 mb-2 text-sm">
+                    Red Hat, Canonical, SUSE, and Debian have released patches. Prioritize internet-exposed hosts, multi-tenant environments, and shared infrastructure where the unprivileged-to-root escalation path is most operationally dangerous. Linux container hosts and cloud instances require host-level patching, container isolation does not protect against kernel-level vulnerabilities. Validate remediation by checking the running kernel version against each vendor's published safe version; a deployed patch is not effective until the host has rebooted into the updated kernel.
+                </p>
+                <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" class="font-serif text-blue-400 mb-1 text-md font-base tracking-wider block">CISA KEV Catalog ›</a>
+
+                <hr class="my-6">
+
+                <h3 class="text-xl font-semibold text-teal-400 mb-1">FortiClient EMS: Privilege Escalation Extends the CISA KEV Attack Chain</h3>
+                <p class="text-gray-800 mb-2 text-sm">
+                    CVE-2026-35616 is a privilege escalation flaw in FortiClient EMS versions 7.4.5 through 7.4.6, under active exploitation since March 31 and added to CISA's KEV catalog with a federal patch deadline of April 9. It extends an existing attack chain: CVE-2026-21643, a SQL injection vulnerability in the same product, enables unauthenticated remote code execution for initial access. The combination creates a two-stage path, RCE for entry, privilege escalation for persistence, through the endpoint management server that has visibility and control across the entire endpoint fleet.
+                </p>
+                <p class="text-gray-800 mb-2 text-sm">
+                    Organizations running FortiClient EMS should immediately verify the deployed version is patched beyond 7.4.6 and audit local administrator activity on the EMS server for signs of unauthorized privilege escalation. The endpoint management console is a high-value lateral movement waypoint, if the EMS server is reached, the attacker gains a command position over every managed endpoint. Segment the EMS management network from production traffic, enforce MFA on EMS administrative access, and treat any EMS server that was running a vulnerable version between March 31 and the patch date as a potential pivot point requiring forensic review.
+                </p>
+                <a href="https://www.fortiguard.com/psirt" target="_blank" class="font-serif text-blue-400 mb-1 text-md font-base tracking-wider block">Fortinet FortiGuard PSIRT ›</a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div class="section-card p-6 rounded-xl border">
+                <h2 class="text-2xl font-bold text-cyan-600 mb-4 flex items-center border-b pb-2">
+                    Training Byte
+                </h2>
+                <h3 class="text-xl font-semibold text-teal-400 mb-2">Locking the Admin Panel: Four Controls for Session-Based Authentication Attacks</h3>
+                <h3 class="text-sky-300 mb-2 text-md font-base flex gap-2">
+                    Vulnerability: Unauthenticated Session Manipulation
+                </h3>
+                <p class="text-gray-800 mb-6 text-sm">
+                    The cPanel vulnerability demonstrates how session management weaknesses in web-based administrative interfaces create unauthenticated paths to root access. When a management console trusts session tokens without validating their integrity, a single CRLF injection can grant an attacker root administrator privileges without credentials, without triggering a login alert, and without leaving a standard authentication log entry.
+                </p>
+
+                <h3 class="text-sky-300 mb-2 text-md font-base flex gap-2">
+                    Mitigation: Hardening the Administrative Session
+                </h3>
+                <ul class="list-disc list-inside ml-2 space-y-1 text-gray-700 text-sm mb-4">
+                    <li class="text-gray-800 mb-2 text-sm">
+                        Apply vendor patches immediately: CVE-2026-41940 has a CVSS of 9.8 with active ransomware deployment confirmed. Treat any unpatched instance as a high-confidence compromise candidate, not a future remediation item.
+                    </li>
+                    <li class="text-gray-800 mb-2 text-sm">
+                        Audit session token configuration: restrict session cookie scope, enforce HttpOnly and Secure flags, and require re-authentication for all privileged administrative actions.
+                    </li>
+                    <li class="text-gray-800 mb-2 text-sm">
+                        Deploy WAF rules targeting CRLF injection patterns (<code>\r\n</code>, <code>%0d%0a</code>) in cookie headers and HTTP request parameters, this attack class is detectable before the exploit fires.
+                    </li>
+                    <li class="text-gray-800 mb-2 text-sm">
+                        Monitor authentication logs for anomalous root-level sessions: unexpected source IPs, activity outside business hours, and administrative events with no corresponding MFA challenge.
+                    </li>
+                </ul>
+                <p class="text-sky-500 text-sm">The authentication layer is the last line of defense before an attacker inherits root authority; it should be the most scrutinized component in any management interface, not an afterthought.</p>
+            </div>
+
+            <div class="section-card p-6 rounded-xl border">
+                <h2 class="text-2xl font-bold text-cyan-600 mb-4 flex items-center border-b pb-2">
+                    Career Development
+                </h2>
+                <h3 class="text-xl font-semibold text-teal-400 mb-4">Management Plane Zero Trust: Applying Least Privilege to the Administrator's Console</h3>
+
+                <p class="text-gray-800 mb-4 text-sm">
+                    The assumption that management infrastructure is inherently trusted, that the endpoint manager, the web hosting panel, and the deployment pipeline occupy a safe internal boundary, is structurally obsolete. Implementing zero trust for the management plane requires treating administrative consoles as untrusted as any external interface: enforce MFA on every management console, scope administrative accounts to the minimum required privilege, segment management networks from production traffic, and use privileged access workstations (PAWs) for all administrative operations.
+                </p>
+                <p class="text-gray-800 mb-6 text-sm">
+                    The Zero Trust Architect certification (CCZT) from the Cloud Security Alliance and the CISM from ISACA provide the governance and implementation frameworks for rebuilding management plane trust from first principles, practical credentials for the security professional in a year when the administrator's console is the primary attack surface.
+                </p>
+
+                <a href="https://cloudsecurityalliance.org/education/cczt/" target="_blank" class="font-serif text-blue-400 mb-2 text-md font-base tracking-wider block">Cloud Security Alliance - CCZT ›</a>
+
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <div class="section-card p-6 rounded-xl border">
+                <h2 class="text-2xl font-bold text-cyan-600 mb-4 flex items-center border-b pb-2">
+                    Modernization and AI Insight
+                </h2>
+                <h3 class="text-xl font-semibold text-teal-400 mb-1">The 44-Day Window: AI Automation and the Collapse of the Exploit Lifecycle</h3>
+                <p class="text-gray-800 mb-2 text-sm">
+                    The time-to-exploit for disclosed CVEs has collapsed from over 700 days in 2020 to 44 days in 2025, with 28.3% of CVEs now weaponized within 24 hours of public disclosure. AI-assisted development is enabling threat actors to automate and scale the conversion of proof-of-concept code into weaponized exploits, compressing the window between disclosure and mass exploitation to days or hours. The cPanel authentication bypass reached confirmed exploitation across 8,859 hosts within the first week of public weaponization; the Linux kernel LPE had working exploits in multiple languages within days of the advisory.
+                </p>
+                <p class="text-gray-800 mb-2 text-sm">
+                    Patch SLA policies built around 30-day cycles for critical vulnerabilities are now structurally insufficient. CISA KEV entries and active exploitation indicators are the correct input to patch urgency calculations, not publication dates. Organizations without a real-time exploitability feed are operating with a structural intelligence gap. The difference between a 44-day window and a zero-day is whether your detection and response capability can close the gap between the first proof-of-concept and the first incident on your network.
+                </p>
+                <a href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" class="font-serif text-blue-400 mb-1 text-md font-base tracking-wider block">CISA Known Exploited Vulnerabilities ›</a>
+
+                <hr class="my-6">
+
+                <h3 class="text-xl font-semibold text-teal-400 mb-1">Agentic Trust: Zero Trust Principles for the Autonomous Agent Fleet</h3>
+                <p class="text-gray-800 mb-2 text-sm">
+                    Machine identities now outnumber human users in enterprise environments by ratios of 50:1 to 500:1, and the deployment of autonomous AI agents is accelerating that imbalance. The Cloud Security Alliance's Agentic Trust Framework extends zero trust principles (verify explicitly, enforce least privilege, assume breach) to autonomous agent operations. The core requirement is cryptographic agent identity: each agent must carry a verifiable, non-repudiable credential, not a shared service account or static API key inherited from the deploying team.
+                </p>
+                <p class="text-gray-800 mb-2 text-sm">
+                    Organizations deploying AI agents without isolated runtime environments, scoped capability definitions, and input provenance tracking are creating the next generation of unmonitored privileged access paths. The same management plane vulnerabilities driving this week's exploitation patterns apply directly to agentic AI infrastructure, the orchestration layer is the high-value target. Threat actors are already shifting from human user targeting to machine identity compromise; the governance frameworks must move at the same pace.
+                </p>
+                <a href="https://cloudsecurityalliance.org/research/topics/artificial-intelligence/" target="_blank" class="font-serif text-blue-400 mb-1 text-md font-base tracking-wider block">Cloud Security Alliance - AI Research ›</a>
+                </div>
+        </div>
+
+        <div class="mb-8">
+            <div class="section-card p-6 rounded-xl border">
+                <h2 class="text-2xl font-bold text-cyan-600 mb-4 flex items-center border-b pb-2">
+                    Final Thought
+                </h2>
+                <h3 class="text-xl font-semibold text-teal-400 mb-1">The Management Layer Is the Perimeter</h3>
+                <p class="text-gray-800 mb-4 text-sm">
+                    Three different products, three different attack categories (hosting control panels, OS cryptographic subsystems, endpoint management consoles) but one shared vulnerability: management interfaces operating at trust levels that no longer reflect current threat reality. The organizations most exposed by this week's exploitation patterns share a common architectural assumption: that the management layer is an internal boundary, not an attack surface.
+                </p>
+                <p class="text-gray-800 text-sm">
+                    As AI automation compresses the exploit lifecycle and the machine identity surface expands, every security team needs to answer the same question: have you applied the same scrutiny to your management infrastructure that you apply to your production systems? When the answer is no, when the administrator's console still lives inside the trusted boundary, the management layer is not your security architecture. It is your adversary's entry point.
+                </p>
+            </div>
+        </div>
+        <!-- FOOTER -->
+        <footer class="mt-12 pt-6 border-t border-gray-300 text-center">
+            <h3 class="text-lg font-base text-gray-800 text-center mb-2">Did you find this briefing useful?</h3>
+            <div class="mt-4 mb-8 flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <a class="libutton shadow-md" href="https://cybersense.solutions/newsletter.html#subscribe" target="_blank">Subscribe</a>
+            <button id="shareButton" class="inline-block px-10 py-2 bg-blue-700 text-gray-900 font-medium rounded-full hover:bg-cyan-500 transition duration-150 shadow-md">Share this Brief</button>
+            </div>
+
+            <!-- Mission advance note -->
+            <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+            <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+            <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> – built for the teams that can't afford to be caught off guard.</p>
+            </div>
+
+            <!-- Brand block -->
+            <div class="border-t pt-4 text-sm">
+            <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+            <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+
+            <!-- Social icons -->
+            <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+                <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+                <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+                <a href="https://x.com/cybersensesec" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">𝕏</a>
+                <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+                <a href="https://www.threads.com/@cybersense.solutions" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+            </div>
+
+            <p style="font-size:11px;color:rgba(56,189,248,0.5);">
+                &copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>
+                Veteran-Owned &mdash; <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong>
+            </p>
+            </div>
+        </footer>
+        </div>
+
+        <script>
+        const shareButton = document.getElementById('shareButton');
+        const shareUrl   = document.querySelector('meta[property="og:url"]').content;
+        const shareTitle = document.querySelector('meta[property="og:title"]').content;
+        const shareText  = document.querySelector('meta[property="og:description"]').content;
+        shareButton.addEventListener('click', async () => {
+            if (navigator.share) {
+            try { await navigator.share({ title: shareTitle, text: shareText, url: shareUrl }); }
+            catch (error) { if (error.name !== 'AbortError') console.error('Error sharing:', error); }
+            } else {
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`, '_blank', 'width=600,height=600');
+            }
+        });
+        </script>
+</body>
+</html>

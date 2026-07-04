@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense: Daily Digital Awareness Brief | May 21, 2026</title>
+<meta property="og:title" content="Edition 129 – Misplaced Trust: CoreDNS Authentication Bypass, SSRF, and Payroll Hijacking | May 21, 2026"/>
+<meta property="og:description" content="CoreDNS authentication bypass on encrypted transports, a Twenty CRM SSRF via IPv4-mapped IPv6, and direct deposit hijacking — misplaced trust at every layer."/>
+<meta property="og:image" content="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png"/>
+<meta property="og:url" content="https://cybersense.solutions/newsletter/2026/May/05212026_edition129.html"/>
+<meta property="og:type" content="article" />
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body {
+    background-color: #111827;
+    background-image:
+      radial-gradient(circle at 10% 50%, rgba(30,60,100,0.25) 0%, rgba(30,60,100,0.0) 50%),
+      radial-gradient(circle at 90% 40%, rgba(0,150,255,0.15) 0%, rgba(0,150,255,0.0) 30%),
+      linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%),
+      linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%);
+    background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px;
+    background-attachment: fixed;
+    color: #e0e7ff;
+    font-family: 'Inter', sans-serif;
+  }
+  .newsletter-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; height: 100%; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  .libutton { display: flex; flex-direction: column; justify-content: center; padding: 7px; text-align: center; outline: none; text-decoration: none !important; color: #ffffff !important; width: 300px; height: 50px; border-radius: 30px; background-color: #0A66C2; font-family: "SF Pro Text", Helvetica, sans-serif; font-weight: 500; transition: background-color 0.15s ease-in-out; }
+  .libutton:hover { background-color: #00FFFF; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 40px !important; border-bottom: none !important; margin-bottom: 40px !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: center; color: #0080ff !important; font-family: georgia; }
+  h3 { text-align: left; color: #66B2FF !important; font-family: georgia; }
+  .edition-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid #0e7490;
+    border-radius: 99px;
+    padding: 4px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #38bdf8;
+  }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="newsletter-container max-w-5xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0">
+    <img src="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png"
+         alt="CyberSense Newsletter Icon"
+         class="rounded-full shadow-xl w-48 h-48 object-cover"
+         onerror="this.onerror=null; this.src='https://placehold.co/192x192/4f46e5/ffffff?text=CS'">
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-2">
+    <span class="edition-badge">Edition 129</span>
+    <span class="text-gray-700 text-base font-semibold">May 21, 2026</span>
+  </div>
+
+  <section class="mb-5 pb-6 border-b-4 border-cyan-700"></section>
+  <header class="text-center mb-4 pb-5 border-b-4 border-cyan-700">
+    <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight">Daily Digital Awareness Brief</h1>
+  </header>
+
+  <div class="mb-8 mt-10">
+    <h2 class="text-4xl sm:text-4xl font-extrabold leading-tight tracking-tight text-center">
+      Misplaced Trust: CoreDNS Authentication Bypass, SSRF, and Payroll Hijacking
+    </h2>
+  </div>
+
+  <section class="mb-12">
+    <p class="text-base text-gray-700 mb-4 leading-relaxed">
+      Today's brief explores a critical unifying theme: the profound impact of misplaced trust within digital infrastructure and personal authentication flows. Whether it involves fundamental network services, modern application frameworks, or employee payroll systems, unverified inputs and misconfigured trust assumptions invariably create vulnerabilities that threat actors are eager to exploit. When systems are designed or configured to implicitly trust signals without robust authentication, the downstream consequences often affect individuals directly, threatening financial stability and personal security.
+    </p>
+    <p class="text-base text-gray-700 leading-relaxed">
+      This edition connects infrastructure misconfiguration, systemic trust-logic flaws, and credential-targeting methodologies to the most personal outcome: the redirection of an employee's paycheck. Two CoreDNS vulnerabilities reveal how encrypted transport layers create false confidence in authentication enforcement, while a Twenty CRM server-side request forgery flaw demonstrates how application-layer trust boundaries collapse under IPv6 notation abuse. Together, these exposures define a threat landscape where the assumption of security — not the absence of it — is the primary attack surface.
+    </p>
+  </section>
+
+  <div class="mb-8">
+    <div class="section-card p-6 rounded-xl border w-full">
+      <h2 class="text-3xl font-bold mb-6 flex items-center border-b pb-2">Situational Awareness</h2>
+
+      <h3 class="text-xl font-semibold mb-1">CVE-2026-33190: CoreDNS TSIG Plugin Authentication Bypass on Encrypted Transports (CVSS 8.7)</h3>
+      <p class="text-gray-800 mb-2 text-sm">
+        A critical vulnerability has been identified in CoreDNS versions prior to 1.14.3, affecting its TSIG authentication plugin. When CoreDNS operates on modern encrypted DNS transports — DoT, DoH, DoH3, DoQ, and gRPC — the TSIG plugin erroneously defaults to transport-level security as a sufficient substitute for transaction-level authentication. This misjudgment allows threat actors to bypass TSIG entirely, potentially enabling unauthorized zone transfers or DNS record manipulation on affected systems. Organizations that rely on encrypted DNS protocols for a perceived increase in security may find themselves with a false sense of protection. The vulnerability demonstrates a fundamental flaw in how the plugin establishes trust in a modern, complex DNS environment: encrypting the channel does not authenticate the transaction. Immediate upgrade to CoreDNS 1.14.3 or later is required to close this authentication gap.
+      </p>
+      <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-33190" target="_blank" class="font-serif text-blue-400 mb-6 text-md tracking-wider block">Read more &rsaquo;</a>
+
+      <hr>
+
+      <h3 class="text-xl font-semibold mb-1">CVE-2026-33489: CoreDNS Transfer Plugin ACL Misconfiguration (CVSS 8.2)</h3>
+      <p class="text-gray-800 mb-2 text-sm">
+        Further illustrating the risks of configuration ambiguity, CoreDNS versions prior to 1.14.3 are also susceptible to a misconfiguration vulnerability within its transfer plugin. When both a parent zone and a more specific subzone are configured, the plugin selects an incorrect Access Control List stanza — inadvertently permitting unauthorized parties to receive DNS zone transfer data that often includes internal network topology, hostname conventions, and service architecture. This vulnerability stems from configuration oversight rather than exploitable code, underscoring the need for meticulous configuration management across complex plugin chains. It pairs with CVE-2026-33190 to illustrate a systemic trust-logic challenge within CoreDNS: configuration nuances can silently expose critical internal data to unauthenticated requestors.
+      </p>
+      <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-33489" target="_blank" class="font-serif text-blue-400 mb-6 text-md tracking-wider block">Read more &rsaquo;</a>
+
+      <hr>
+
+      <h3 class="text-xl font-semibold mb-1">CVE-2026-33975: Twenty CRM SSRF Protection Bypass via IPv4-Mapped IPv6 Addresses (CVSS 8.3)</h3>
+      <p class="text-gray-800 mb-2 text-sm">
+        A high-severity server-side request forgery vulnerability has been discovered in Twenty, an open-source CRM platform, affecting versions 1.18.0 and earlier. The SSRF protections implemented in the SecureHttpClientService can be bypassed by leveraging IPv4-mapped IPv6 address notation (e.g., <code style="color:#38bdf8;">::ffff:127.0.0.1</code>). This bypass allows attackers to coerce the CRM server into making requests to internal resources that should be inaccessible — facilitating lateral movement toward credential stores, metadata services, and internal APIs. For organizations utilizing self-hosted or cloud-deployed CRM platforms, this vulnerability presents a direct path from an externally facing application into sensitive internal systems, echoing the attack vectors present in credential harvesting schemes including those targeting payroll infrastructure.
+      </p>
+      <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-33975" target="_blank" class="font-serif text-blue-400 mb-1 text-md tracking-wider block">Read more &rsaquo;</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+    <div class="section-card p-6 rounded-xl border">
+      <h2 class="text-2xl font-bold mb-4 flex items-center border-b pb-2">Training Byte</h2>
+      <h3 class="text-xl font-semibold mb-2">Payroll Hijacking: Five Steps to Protect Your Direct Deposit</h3>
+      <p class="text-gray-800 mb-4 text-sm">
+        Direct deposit hijacking is a highly impactful form of cyber fraud: threat actors gain unauthorized access to an employee's HR self-service portal or payroll system, alter the bank routing number on file, and divert subsequent paychecks before the employee detects the change. Funds are typically unrecoverable by the time the fraud surfaces. Access is achieved through phishing campaigns impersonating HR or IT, credential stuffing from prior breaches, SSRF exploitation against internal payroll APIs, or vishing calls that social-engineer routing changes directly.
+      </p>
+      <ol class="list-decimal list-inside space-y-2 text-gray-800 mb-4 text-sm">
+        <li><strong>Verify your direct deposit settings proactively.</strong> Log into your HR portal directly — not via email links — to confirm account details remain accurate, especially after system updates.</li>
+        <li><strong>Enable MFA on all payroll and email accounts.</strong> Multi-factor authentication exponentially raises the barrier for credential-based access, even when passwords are compromised.</li>
+        <li><strong>Scrutinize payroll communications.</strong> Any message requesting you to click a link to "verify" or "update" payroll information should be treated as a phishing attempt until verified via a known phone number.</li>
+        <li><strong>Use unique, strong passwords.</strong> Credential reuse is the primary enabler of stuffing attacks — use a password manager and never share credentials across work-related accounts.</li>
+        <li><strong>Monitor bank statements around paydays.</strong> Early detection is the primary mitigation — a missing deposit caught the same day limits the window for fund movement.</li>
+      </ol>
+      <p class="italic text-sky-500 mb-2 text-sm font-base">The attacker doesn't need to breach the bank. They only need your HR portal login.</p>
+    </div>
+
+    <div class="section-card p-6 rounded-xl border">
+      <h2 class="text-2xl font-bold mb-4 flex items-center border-b pb-2">Career Development</h2>
+      <h3 class="text-xl font-semibold mb-2">Secure Configuration Management, DevSecOps, and Identity &amp; Access Management</h3>
+      <p class="text-gray-800 mb-4 text-sm">
+        The vulnerabilities in today's edition — CoreDNS plugin chain misconfiguration, SSRF protection bypass, and credential-targeting payroll fraud — collectively underscore critical skill gaps that define high-demand security engineering roles in 2026. Professionals specializing in <strong>Secure Configuration Management</strong> are needed to audit and enforce correct behavior across complex, plugin-driven systems like CoreDNS. <strong>DevSecOps</strong> practitioners who understand how to implement trust boundaries in cloud-native deployments — including correct ACL scoping and internal service isolation — are positioned for senior infrastructure security roles. <strong>Identity and Access Management (IAM)</strong> engineers who can design least-privilege access models for HR, payroll, and CRM systems are increasingly central to enterprise risk reduction programs.
+      </p>
+      <p class="text-gray-800 mb-4 text-sm">Developing practical expertise in these three areas directly addresses the systemic trust failures documented today and constitutes a high-ROI investment for practitioners targeting cloud security architecture and senior security engineering positions.</p>
+    </div>
+  </div>
+
+  <div class="mb-8">
+    <div class="section-card p-6 rounded-xl border">
+      <h2 class="text-2xl font-bold mb-4 flex items-center border-b pb-2">Modernization and AI Insight</h2>
+
+      <h3 class="text-xl font-semibold mb-1">DNS Modernization and the Trust Gap: How Encrypted Transports Create New Configuration Risk</h3>
+      <p class="text-gray-800 mb-2 text-sm">
+        The transition to encrypted DNS transports — DoH, DoT, DoH3, DoQ, and gRPC — represents a genuine modernization investment in user privacy and network security. However, as today's CoreDNS vulnerabilities demonstrate, modernization can introduce new complexity and implicit trust assumptions if implementation is not rigorously audited. The TSIG bypass on encrypted transports illustrates a specific failure mode: organizations assumed that adopting a "more secure" protocol was equivalent to maintaining transaction-level authentication integrity. It was not. AI-driven configuration auditing tools can address this gap by identifying subtle plugin chain misconfigurations that human administrators miss in distributed environments. Anomaly detection models monitoring DNS query patterns and zone transfer activity can surface unauthorized access attempts before data exfiltration completes. And intelligent trust validation frameworks — built to assess authentication enforcement across protocol layers, not just transport encryption — represent the next frontier in automated DNS security posture management.
+      </p>
+
+      <hr>
+
+      <h3 class="text-xl font-semibold mb-1">AI-Assisted Lateral Movement Detection: Closing the SSRF-to-Credential-Store Gap</h3>
+      <p class="text-gray-800 mb-2 text-sm">
+        The Twenty CRM SSRF vulnerability (CVE-2026-33975) highlights a class of internal pivot that traditional perimeter monitoring consistently misses: an attacker using a trusted application server as a proxy to reach internal metadata services, credential stores, and APIs. AI-assisted behavioral analytics are increasingly capable of detecting this pattern — identifying when an application server is making unusual internal HTTP requests that fall outside its normal operational profile. By training on baseline internal traffic patterns and flagging requests to 169.254.169.254 (cloud metadata), internal secret management endpoints, or lateral service APIs, AI detection layers can surface SSRF exploitation attempts in real time rather than through post-incident log review. For security architects modernizing CRM and SaaS deployments, integrating AI-assisted east-west traffic inspection alongside application-layer SSRF protections provides defense-in-depth against the trust boundary failures that single-layer IP blocklists consistently fail to prevent.
+      </p>
+    </div>
+  </div>
+
+  <div class="mb-8">
+    <div class="section-card p-6 rounded-xl border">
+      <h2 class="text-2xl font-bold mb-4 flex items-center border-b pb-2">Final Thought</h2>
+      <p class="text-gray-800 text-sm leading-relaxed">
+        Today's edition brings into sharp focus the human element at the core of cybersecurity. From the subtle authentication bypass in critical DNS infrastructure to the application-layer trust collapse in a widely deployed CRM platform, and ultimately to the redirection of an individual's paycheck, the common thread is a failure in the chain of trust. Encrypting a channel does not authenticate a transaction. Blocking an IP format does not block the intent behind it. Locking a system does not protect it from the credential already stolen. As technologists, leaders, and employees, our collective vigilance — from rigorous configuration management and protocol-aware security design to personal credential hygiene and proactive account monitoring — remains the irreducible layer that no tool can fully replace. Protecting our digital ecosystems means not only securing data at rest but verifying the integrity of every trust assumption embedded in the systems that process it in real time.
+      </p>
+    </div>
+  </div>
+
+  <footer class="mt-12 pt-6 border-t border-gray-300 text-center">
+    <h3 class="text-lg font-base text-gray-800 text-center mb-2">Did you find this briefing useful?</h3>
+    <div class="mt-4 mb-8 flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+      <a class="libutton shadow-md" href="https://cybersense.solutions/newsletter.html#subscribe" target="_blank">Subscribe</a>
+      <button id="shareButton" class="inline-block px-10 py-2 bg-blue-700 text-gray-900 font-medium rounded-full hover:bg-cyan-500 transition duration-150 shadow-md">Share this Brief</button>
+    </div>
+
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> - built for the teams that can't afford to be caught off guard.</p>
+    </div>
+
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">
+        &copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>
+        Veteran-Owned - <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong>
+      </p>
+    </div>
+  </footer>
+</div>
+
+<script>
+  const shareButton = document.getElementById('shareButton');
+  if (shareButton) {
+    shareButton.addEventListener('click', () => {
+      if (navigator.share) {
+        navigator.share({
+          title: 'CyberSense: Daily Digital Awareness Brief — Edition 129',
+          text: 'Misplaced Trust: CoreDNS Authentication Bypass, SSRF, and Payroll Hijacking',
+          url: window.location.href
+        }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          shareButton.textContent = 'Link Copied!';
+          setTimeout(() => { shareButton.textContent = 'Share this Brief'; }, 2000);
+        });
+      }
+    });
+  }
+</script>
+</body>
+</html>

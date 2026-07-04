@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense: Daily Digital Awareness Brief | May 22, 2026</title>
+<meta property="og:title" content="Edition 130 – The Human Layer Is the Attack Surface: SQL Injection, Credential Exposure, and Perimeter RCE | May 22, 2026"/>
+<meta property="og:description" content="Kestra SQL injection, OpenStack iDRAC credential forwarding, and D-Link perimeter RCE — three vectors unified by the same root cause: trusted input that was never verified."/>
+<meta property="og:image" content="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png"/>
+<meta property="og:url" content="https://cybersense.solutions/newsletter/2026/May/05222026_edition130.html"/>
+<meta property="og:type" content="article" />
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body {
+    background-color: #111827;
+    background-image:
+      radial-gradient(circle at 10% 50%, rgba(30,60,100,0.25) 0%, rgba(30,60,100,0.0) 50%),
+      radial-gradient(circle at 90% 40%, rgba(0,150,255,0.15) 0%, rgba(0,150,255,0.0) 30%),
+      linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%),
+      linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%);
+    background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px;
+    background-attachment: fixed;
+    color: #e0e7ff;
+    font-family: 'Inter', sans-serif;
+  }
+  .newsletter-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; height: 100%; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  .libutton { display: flex; flex-direction: column; justify-content: center; padding: 7px; text-align: center; outline: none; text-decoration: none !important; color: #ffffff !important; width: 300px; height: 50px; border-radius: 30px; background-color: #0A66C2; font-family: "SF Pro Text", Helvetica, sans-serif; font-weight: 500; transition: background-color 0.15s ease-in-out; }
+  .libutton:hover { background-color: #00FFFF; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 40px !important; border-bottom: none !important; margin-bottom: 40px !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: center; color: #0080ff !important; font-family: georgia; }
+  h3 { text-align: left; color: #66B2FF !important; font-family: georgia; }
+  .edition-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid #0e7490;
+    border-radius: 99px;
+    padding: 4px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #38bdf8;
+  }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="newsletter-container max-w-5xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0">
+    <img src="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png"
+         alt="CyberSense Newsletter Icon"
+         class="rounded-full shadow-xl w-48 h-48 object-cover"
+         onerror="this.onerror=null; this.src='https://placehold.co/192x192/4f46e5/ffffff?text=CS'">
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-2">
+    <span class="edition-badge">Edition 130</span>
+    <span class="text-gray-700 text-base font-semibold">May 22, 2026</span>
+  </div>
+
+  <section class="mb-5 pb-6 border-b-4 border-cyan-700"></section>
+  <header class="text-center mb-4 pb-5 border-b-4 border-cyan-700">
+    <h1 class="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight">Daily Digital Awareness Brief</h1>
+  </header>
+
+  <div class="mb-8 mt-10">
+    <h2 class="text-4xl sm:text-4xl font-extrabold leading-tight tracking-tight text-center">
+      The Human Layer Is the Attack Surface: SQL Injection, Credential Exposure, and Perimeter RCE
+    </h2>
+  </div>
+
+  <section class="mb-12">
+    <p class="text-base text-gray-700 mb-4 leading-relaxed">
+      Today's brief focuses on a critical operational truth in the ever-evolving threat landscape: <strong>the human layer is the attack surface.</strong> Whether it's the trust placed in user-supplied input, the integrity of credential flows, or the human decisions governing institutional systems, threat actors consistently exploit these vectors. The most durable defenses are built by professionals who deeply understand both the technical and human dimensions of risk.
+    </p>
+    <p class="text-base text-gray-700 leading-relaxed">
+      This edition moves from immediate application and infrastructure vulnerabilities — a critical SQL injection in a workflow orchestration platform, credential forwarding in bare-metal provisioning infrastructure, and unauthenticated remote code execution at the network perimeter — through a real-world breach impacting an educational platform, to reinforcing the workforce and identity infrastructure needed to address these pervasive gaps. The pattern is consistent: unvalidated input and misplaced trust create the opening. Human awareness and disciplined practice close it.
+    </p>
+  </section>
+
+  <div class="mb-8">
+    <div class="section-card p-6 rounded-xl border w-full">
+      <h2 class="text-3xl font-bold mb-6 flex items-center border-b pb-2">Situational Awareness</h2>
+
+      <h3 class="text-xl font-semibold mb-1">CVE-2026-38428: Kestra v1.3.3 and Prior — SQL Injection (CVSS 9.8)</h3>
+      <p class="text-gray-800 mb-2 text-sm">
+        A critical SQL injection vulnerability in Kestra, a widely deployed workflow orchestration platform, arises from the direct concatenation of unvalidated, user-controlled input from a GET parameter into an SQL query. With a CVSS score of 9.8, this flaw allows threat actors to manipulate database queries, enabling data exfiltration, authentication bypass, and full database compromise. Kestra's use in enterprise automation pipelines means exposure extends beyond the platform itself — any workflow with privileged data access becomes a lateral movement vector. Organizations should patch immediately to a secure release, enforce parameterized queries as a core development standard across all internal applications, and audit any workflow automation deployments utilizing Kestra for unusual query patterns or unauthorized data access.
+      </p>
+      <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-38428" target="_blank" class="font-serif text-blue-400 mb-6 text-md tracking-wider block">Read more &rsaquo;</a>
+
+      <hr>
+
+      <h3 class="text-xl font-semibold mb-1">CVE-2026-42997: OpenStack Ironic Prior to 35.0.1 — iDRAC Credential Forwarding (CVSS 7.7)</h3>
+      <p class="text-gray-800 mb-2 text-sm">
+        This vulnerability in OpenStack Ironic, the bare-metal provisioning service, highlights the risks inherent in credential exposure during infrastructure operations. Threat actors can leverage user-invoked "molds" during import operations to redirect iDRAC (Integrated Dell Remote Access Controller) authorization credentials to an arbitrary, actor-controlled remote endpoint. The result is credential theft and lateral movement within bare-metal provisioning infrastructure — the layer most organizations treat as implicitly trusted. Immediate action requires upgrading to OpenStack Ironic 35.0.1 or later, auditing all import mold workflows for suspicious endpoint redirects, restricting authorization targets to validated allowlists, and reviewing access controls for all cloud infrastructure team roles. The lesson is consistent with today's theme: the credential itself is the target, and the path to it runs through trusted operational workflows.
+      </p>
+      <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-42997" target="_blank" class="font-serif text-blue-400 mb-6 text-md tracking-wider block">Read more &rsaquo;</a>
+
+      <hr>
+
+      <h3 class="text-xl font-semibold mb-1">CVE-2026-7854: D-Link DI-8100 Firmware 16.07.26A1 — Unauthenticated Remote Code Execution (CVSS 10.0)</h3>
+      <p class="text-gray-800 mb-2 text-sm">
+        With a perfect CVSS score of 10.0, this vulnerability in the D-Link DI-8100 edge router demands immediate attention from any organization operating this device at the network perimeter. A malicious POST request targeting the <code style="color:#38bdf8;">url_rule_asp</code> function in <code style="color:#38bdf8;">/url_rule.asp</code> can trigger unauthenticated remote code execution, enabling threat actors to achieve full device compromise, establish a persistent pivot point within the network, and eliminate perimeter visibility entirely. Given that this device line is typically at or past end-of-support, a firmware patch may not be available. Organizations must check vendor advisories immediately, isolate the device behind additional network controls as an interim measure, and prioritize hardware replacement. Any D-Link DI-8100 still in production should be treated as a compromised asset until remediated.
+      </p>
+      <a href="https://nvd.nist.gov/vuln/detail/CVE-2026-7854" target="_blank" class="font-serif text-blue-400 mb-1 text-md tracking-wider block">Read more &rsaquo;</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+    <div class="section-card p-6 rounded-xl border">
+      <h2 class="text-2xl font-bold mb-4 flex items-center border-b pb-2">Training Byte</h2>
+      <h3 class="text-xl font-semibold mb-2">When the Classroom Becomes the Attack Surface: Lessons from the Canvas LMS Breach</h3>
+      <p class="text-gray-800 mb-3 text-sm">
+        ShinyHunters — a financially motivated threat group known for large-scale credential harvesting from SaaS platforms — targeted Canvas by Instructure, a widely adopted Learning Management System serving millions of students, faculty, and staff across K–12, higher education, and corporate training environments.
+      </p>
+      <p class="text-gray-800 mb-3 text-sm">
+        Data at risk includes student PII, faculty records, course enrollment data, internal communications, institutional SSO tokens, and credentials for integrated third-party applications. Access vectors include credential stuffing, OAuth token abuse, and misconfigured API integrations — attack paths enabled by the high degree of implicit trust users extend to LMS platforms.
+      </p>
+      <p class="text-gray-800 mb-3 text-sm font-semibold">Key mitigations:</p>
+      <ul class="list-disc list-inside space-y-1 text-gray-800 mb-3 text-sm">
+        <li>Rotate Canvas/LMS passwords immediately; never reuse institutional credentials on external platforms.</li>
+        <li>Enable MFA on all LMS and affiliated accounts; regularly revoke unused third-party app authorizations.</li>
+        <li>Audit all API keys and OAuth tokens — enforce strict expiration and monitor for anomalous off-hours access.</li>
+        <li>Classify LMS platforms as critical data systems and integrate them into incident response exercises.</li>
+        <li>Map breach notification obligations under FERPA and applicable state privacy laws.</li>
+      </ul>
+      <p class="italic text-sky-500 mb-2 text-sm">The trust extended to educational platforms is a valuable commodity for threat actors. Apply the same scrutiny you give to enterprise infrastructure.</p>
+    </div>
+
+    <div class="section-card p-6 rounded-xl border">
+      <h2 class="text-2xl font-bold mb-4 flex items-center border-b pb-2">Career Development</h2>
+      <h3 class="text-xl font-semibold mb-2">The Human Element of a Cyber Career — NICE Webinar Highlights Communication as a Core Skill</h3>
+      <p class="text-gray-800 mb-4 text-sm">
+        NIST's NICE program highlighted in a May 2026 webinar that communication, decision-making, and human-centered judgment remain essential differentiators as technical security work evolves. The message aligns with today's brief: the most sophisticated vulnerability disclosures still require practitioners who can translate technical risk into organizational action and influence remediation decisions at the executive level.
+      </p>
+      <p class="text-gray-800 mb-4 text-sm">
+        The vulnerabilities in today's edition — SQL injection in a workflow platform, credential forwarding in infrastructure provisioning, and unauthenticated RCE at the perimeter — each require not only technical remediation but clear communication to the business units that own the affected systems. Practitioners who can do both are in high demand.
+      </p>
+      <p class="text-gray-800 text-sm">
+        Recommended focus areas: <strong>secure development advocacy</strong> (parameterized queries, input validation), <strong>infrastructure access management</strong> (credential lifecycle in cloud and bare-metal environments), and <strong>risk communication</strong> — the skill that turns a CVSS 10.0 finding into a board-level remediation decision.
+      </p>
+    </div>
+  </div>
+
+  <div class="mb-8">
+    <div class="section-card p-6 rounded-xl border">
+      <h2 class="text-2xl font-bold mb-4 flex items-center border-b pb-2">Modernization and AI Insight</h2>
+
+      <h3 class="text-xl font-semibold mb-1">NIST Verifiable Credentials Work Moves Identity Modernization from Format to Process</h3>
+      <p class="text-gray-800 mb-2 text-sm">
+        NIST's work on mobile documents and W3C Verifiable Credentials establishes that adopting a credential format — whether a digital driver's license or a VC-based access token — is not, by itself, a security improvement. The security lives in the issuance workflow: identity proofing, wallet behavior, relying-party validation, and revocation handling must all be specified and enforced before organizations can trust the credential. This is directly relevant to today's threat landscape, where credential forwarding (CVE-2026-42997) and credential harvesting (Canvas LMS) exploit gaps in how credentials are validated after issuance, not just how they are formatted. Organizations modernizing their identity infrastructure should treat NIST's VC issuance guidance as a process requirement, not a format selection exercise.
+      </p>
+
+      <hr>
+
+      <h3 class="text-xl font-semibold mb-1">NIST Small-Business Cybersecurity Resources Emphasize Operable Resilience for Lean Teams</h3>
+      <p class="text-gray-800 mb-2 text-sm">
+        NIST highlighted new and upcoming small-business cybersecurity resources during 2026 National Small Business Week, including guidance for non-employer firms and community engagement resources designed to make cyber awareness actionable for teams without dedicated security staff. The emphasis on "operable resilience" — practical controls that lean teams can actually implement and sustain — mirrors the training byte lesson from today: platform trust and credential hygiene are not enterprise-only concerns. SQL injection, credential theft, and perimeter RCE affect organizations of every size. The NIST resources acknowledge this and are worth reviewing for any organization building a security baseline without a full SOC. Practitioners advising small and mid-market clients should reference these materials as a scalable starting point for input validation and access management conversations.
+      </p>
+    </div>
+  </div>
+
+  <div class="mb-8">
+    <div class="section-card p-6 rounded-xl border">
+      <h2 class="text-2xl font-bold mb-4 flex items-center border-b pb-2">Final Thought</h2>
+      <p class="text-gray-800 text-sm leading-relaxed">
+        Today's brief underscores that securing our digital ecosystems is not solely a technical challenge — it is fundamentally a human one. SQL injection persists because developers concatenate untrusted input. Credential forwarding succeeds because infrastructure workflows are extended implicit trust without validation. Perimeter RCE lands because end-of-life hardware is treated as low priority until it is too late. And institutional breaches scale because users extend trust to platforms without scrutinizing the credential hygiene around them. By understanding how threat actors exploit trust in input and credentials, and by empowering our workforce with disciplined practices and continuous awareness, we strengthen the most critical layer of defense. A resilient workforce — well-versed in both the technicalities of vulnerabilities and the human decisions that enable or prevent them — is our most potent asset in navigating the complex threat landscape.
+      </p>
+    </div>
+  </div>
+
+  <footer class="mt-12 pt-6 border-t border-gray-300 text-center">
+    <h3 class="text-lg font-base text-gray-800 text-center mb-2">Did you find this briefing useful?</h3>
+    <div class="mt-4 mb-8 flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+      <a class="libutton shadow-md" href="https://cybersense.solutions/newsletter.html#subscribe" target="_blank">Subscribe</a>
+      <button id="shareButton" class="inline-block px-10 py-2 bg-blue-700 text-gray-900 font-medium rounded-full hover:bg-cyan-500 transition duration-150 shadow-md">Share this Brief</button>
+    </div>
+
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> - built for the teams that can't afford to be caught off guard.</p>
+    </div>
+
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">
+        &copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>
+        Veteran-Owned - <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong>
+      </p>
+    </div>
+  </footer>
+</div>
+
+<script>
+  const shareButton = document.getElementById('shareButton');
+  if (shareButton) {
+    shareButton.addEventListener('click', () => {
+      if (navigator.share) {
+        navigator.share({
+          title: 'CyberSense: Daily Digital Awareness Brief — Edition 130',
+          text: 'The Human Layer Is the Attack Surface: SQL Injection, Credential Exposure, and Perimeter RCE',
+          url: window.location.href
+        }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          shareButton.textContent = 'Link Copied!';
+          setTimeout(() => { shareButton.textContent = 'Share this Brief'; }, 2000);
+        });
+      }
+    });
+  }
+</script>
+</body>
+</html>

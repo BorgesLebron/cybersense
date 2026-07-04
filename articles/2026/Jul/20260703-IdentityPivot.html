@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | The Identity Pivot: How WhatsApp Usernames Reshape OSINT, Corporate Impersonation, and Global OpSec</title>
+<meta property="og:title" content="Title"/>
+<meta property="og:description" content="ExecutiveSummaryFirstSentence"/>
+<meta property="og:image" content="https://cybersense.solutions/articles/2026/Jul/banners/IdentityPivot.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Jul/20260703-IdentityPivot.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+  /* ── Base ─────────────────────────────────────────────── */
+  body {
+    background-color: #000711;
+    background-image:
+      radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%),
+      radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%),
+      linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%),
+      linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%);
+    background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px;
+    background-attachment: fixed;
+    color: #e0e7ff;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ── Layout containers ────────────────────────────────── */
+  .article-container {
+    background-color: rgba(255,255,255,0.05);
+    backdrop-filter: blur(5px);
+    border-color: rgba(255,255,255,0.1) !important;
+  }
+  .section-card {
+    background-color: rgba(0,0,0,0.3) !important;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+    transition: transform 0.2s, box-shadow 0.2s;
+    border-color: rgba(255,255,255,0.1) !important;
+  }
+  .section-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+  }
+
+  /* ── Color overrides ──────────────────────────────────── */
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+
+  /* ── Typography ───────────────────────────────────────── */
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left;   color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left;   color: #51a3f6 !important; font-family: georgia; }
+  hr {
+    border-top: 2px solid rgba(255,255,255,0.1) !important;
+    margin-top: 20px !important;
+    border-bottom: none !important;
+    margin-bottom: 20px !important;
+  }
+
+  /* ── Article banner ───────────────────────────────────── */
+  .article-banner {
+    width: 100%;
+    max-height: 480px;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: block;
+  }
+
+  /* ── Category badges (edition-badge style) ────────────── */
+  .category-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 99px;
+    padding: 4px 16px;
+    font-family: georgia;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  /* Red — Threat Intel */
+  .badge-threat {
+    border: 1px solid #661616;
+    background: #3C0A0A;
+    color: #FF0303;
+  }
+  /* Green — Professional Growth */
+  .badge-growth {
+    border: 1px solid #3e4a44;
+    background: #17542D;
+    color: #05f15b;
+  }
+
+  .special-font {
+    font-family: georgia;
+  }
+
+  /* Blue — Development · Innovation · Governance */
+  .badge-dig {
+    border: 1px solid #2b3757;
+    background: #364d8d;
+    color: #f7f9fa;
+  }
+
+  /* ── Tag badges (small inline) ────────────────────────── */
+  .tag-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0,150,255,0.12);
+    border: 1px solid rgba(0,150,255,0.3);
+    border-radius: 99px;
+    padding: 3px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #7dd3fc;
+  }
+
+  /* ── Meta badges ──────────────────────────────────────── */
+  .meta-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid #0e7490;
+    border-radius: 99px;
+    padding: 4px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #38bdf8;
+  }
+  .tag-badge {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0,150,255,0.12);
+    border: 1px solid rgba(0,150,255,0.3);
+    border-radius: 99px;
+    padding: 3px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #7dd3fc;
+  }
+
+  /* ── Alert / insight callout ──────────────────────────── */
+  .insight-callout {
+    background: rgba(0,150,255,0.07);
+    border-left: 4px solid #0080ff;
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    margin: 20px 0;
+  }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+
+  /* ── Severity / classification strip ─────────────────── */
+  .classification-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .sev-critical { color: #f87171; }
+  .sev-high     { color: #fb923c; }
+  .sev-medium   { color: #fbbf24; }
+  .sev-low      { color: #34d399; }
+  .sev-info     { color: #38bdf8; }
+  .strip-divider { color: #34d399; }
+
+  /* ── Recommended actions table ────────────────────────── */
+  .action-tier {
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+  }
+  .action-tier-label {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #38bdf8;
+    margin-bottom: 6px;
+  }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+
+  /* ── Pull quote / closing statement ──────────────────── */
+  .pull-quote {
+    border-left: 3px solid #0080ff;
+    padding: 12px 20px;
+    margin: 24px 0;
+    font-family: georgia;
+    font-style: italic;
+    font-size: 15px;
+    line-height: 1.7;
+    color: #49a2fb;
+  }
+
+  /* ── LinkedIn / share button ──────────────────────────── */
+  .libutton {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 7px;
+    text-align: center;
+    outline: none;
+    text-decoration: none !important;
+    color: #ffffff !important;
+    width: 300px;
+    height: 50px;
+    border-radius: 30px;
+    background-color: #0A66C2;
+    font-family: "SF Pro Text", Helvetica, sans-serif;
+    font-weight: 500;
+    transition: background-color 0.15s ease-in-out;
+  }
+  .libutton:hover { background-color: #00FFFF; color: #111827 !important; }
+
+  /* ── Breadcrumb ───────────────────────────────────────── */
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <!-- ── Branding header ─────────────────────────────────── -->
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png"
+           alt="CyberSense.Solutions"
+           class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <!-- Breadcrumb -->
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intelligence.html">Articles</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">The Identity Pivot</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+  
+    <!-- ── Category badge row ───────────────────────────────
+       Use ONE badge variant. Delete the other two.
+       badge-threat  = Threat Intel          (red)
+       badge-growth  = Professional Growth   (green)
+       badge-dig     = Dev · Innovation · Gov (blue)
+  ──────────────────────────────────────────────────────── -->
+  <div class="flex justify-between items-center mt-4 mb-4">
+ 
+    <!-- THREAT INTEL (red) — delete if not this category -->
+    <!-- <span class="category-badge badge-threat">&nbsp;Threat Intel</span> -->
+ 
+    <!-- PROFESSIONAL GROWTH (green) — delete if not this category -->
+    <!-- <span class="category-badge badge-growth">&nbsp;Professional Growth</span> -->
+ 
+    <!-- DEVELOPMENT · INNOVATION · GOVERNANCE (blue) — delete if not this category -->
+    <span class="category-badge badge-dig">&nbsp;Development &bull; Innovation &bull; Governance</span> 
+ 
+    <span class="special-font text-gray-700 text-base font-semibold">date</span>
+  </div>
+ 
+  <!-- ── Classification / meta strip ────────────────────── -->
+  <div class="classification-strip mb-6">
+    <span class="sev-[SEVERITY LEVEL: critical|high|medium|low|info]">[SEVERITY: Critical | High | Medium | Low | Informational]</span>
+    <span class="strip-divider">|</span>
+    <span style="color:#94a3b8;">CVE</span>
+    <span class="strip-divider">|</span>
+    <span style="color:#94a3b8;">Published: </span>
+    <span class="strip-divider">|</span>
+    <span style="color:#94a3b8;">AffectedPlatformProduct</span>
+  </div>
+
+  <!-- ── Title block ─────────────────────────────────────── -->
+  <header class="mb-8">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">
+      TITLE
+    </h1>
+    <!-- Tags -->
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">Tag1</span>
+      <span class="tag-badge">Tag2</span>
+      <span class="tag-badge">Tag3</span>
+      <!-- Add or remove tag-badge spans as needed -->
+    </div>
+  </header>
+
+  <!-- ── Article banner image ────────────────────────────── -->
+  <!-- Replace src with your actual banner. Recommended: 1200×630 px minimum -->
+  <div class="mb-6">
+    <img
+      src="BannerURL"
+      alt="Tile — CyberSense.Solutions"
+      class="article-banner"
+    >
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 1 — EXECUTIVE SUMMARY
+  ════════════════════════════════════════════════════════ -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">
+      info
+    </p>
+    <!-- Optional key-finding callout -->
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> info<p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 2 — WHAT HAPPENED
+  ════════════════════════════════════════════════════════ -->
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      info
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      info
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      info
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 3 — WHY IT MATTERS
+       Three-audience structure: practitioners / executives / policy
+  ════════════════════════════════════════════════════════ -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+
+    <h3 class="text-lg font-semibold mb-2">For Security Practitioners &amp; Threat Hunting Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">
+      info
+    </p>
+
+    <hr>
+
+    <h3 class="text-lg font-semibold mb-2">For Corporate Executives &amp; Security Resource Directors</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">
+      info
+    </p>
+
+    <hr>
+
+    <h3 class="text-lg font-semibold mb-2">For Policy &amp; Risk Management Stakeholders</h3>
+    <p class="text-gray-800 text-sm leading-relaxed">
+      info
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 4 — OPERATIONAL IMPLICATIONS
+  ════════════════════════════════════════════════════════ -->
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      info
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      info
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      info
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed">
+      info
+    </p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 5 — RECOMMENDED ACTIONS
+       Three-tier structure: Baseline / Intermediate / Advanced
+  ════════════════════════════════════════════════════════ -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">
+      info
+    </p>
+
+    <div class="action-tier">
+      <div class="action-tier-label">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 10px mb-2 leading-relaxed"> * Highest Priority.</p>
+      <ul>
+        <li>info</li>
+        <li>info</li>
+        <li>info</li>
+        <li>info</li>
+      </ul>
+    </div>
+
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#fbbf24;">⬤ Intermediate Maturity Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 10px mb-2 leading-relaxed"> * Focus.</p>
+      <ul>
+        <li>info</li>
+        <li>info</li>
+        <li>info</li>
+        <li>info</li>
+      </ul>
+    </div>
+
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#f87171;">⬤ Advanced Institutional Environments</div>
+      <p class="text-cyan-400 text-xs px-4 10px mb-2 leading-relaxed"> * Implement.</p>
+      <ul>
+        <li>info</li>
+        <li>info</li>
+        <li>info</li>
+        <li>info</li>
+      </ul>
+    </div>
+
+     <!-- <p class="text-gray-800 text-sm leading-relaxed mt-4">
+      [CLOSING NOTE for this section — e.g., reminder to review patch prioritization methodologies or to test incident response procedures.] 
+    </p> -->
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       SECTION 6 — CLOSING STATEMENT
+  ════════════════════════════════════════════════════════ -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      info
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      info
+    </p>
+
+    <!-- Edition-level closing pull quote -->
+    <div class="pull-quote">
+      "Quote"
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────── -->
+  <!-- OPTIONAL SECTIONS — include as applicable per article   -->
+  <!-- ─────────────────────────────────────────────────────── -->
+
+  <!--
+  OPTIONAL: Technical Deep-Dive (for exploit-heavy articles)
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold mb-4">Technical Deep-Dive</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      [Gadget chain analysis, PoC mechanics, affected code paths, CVSS scoring breakdown, etc.]
+    </p>
+  </div>
+  -->
+
+  <!--
+  OPTIONAL: Threat Actor Profile (for APT/campaign articles)
+
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Threat Actor Profile</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong>Attribution:</strong> [Name / Group / Suspected Nation-State]</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong>Known TTPs:</strong> [MITRE ATT&CK references]</p>
+    <p class="text-gray-800 text-sm leading-relaxed"><strong>Campaign Objective:</strong> [Espionage / Financial / Disruption]</p>
+  </div>
+  -->
+
+  <!--
+  OPTIONAL: Affected Versions / IOC Table
+
+  <div class="mb-8">
+    <h2 class="text-2xl font-bold mb-4">Affected Versions &amp; Patch Reference</h2>
+    <div class="section-card rounded-xl border overflow-hidden">
+      <table class="w-full text-sm" style="border-collapse:collapse;">
+        <thead>
+          <tr style="background:rgba(0,128,255,0.12);">
+            <th style="padding:10px 14px;text-align:left;color:#38bdf8;border-bottom:1px solid rgba(255,255,255,0.1);">Product</th>
+            <th style="padding:10px 14px;text-align:left;color:#38bdf8;border-bottom:1px solid rgba(255,255,255,0.1);">Affected Build</th>
+            <th style="padding:10px 14px;text-align:left;color:#38bdf8;border-bottom:1px solid rgba(255,255,255,0.1);">Patched Build</th>
+            <th style="padding:10px 14px;text-align:left;color:#38bdf8;border-bottom:1px solid rgba(255,255,255,0.1);">KB Article</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+            <td style="padding:10px 14px;color:#e0e7ff;">[Product Name]</td>
+            <td style="padding:10px 14px;color:#e0e7ff;">[Build X.X.X]</td>
+            <td style="padding:10px 14px;color:#34d399;">[Build X.X.X]</td>
+            <td style="padding:10px 14px;"><a href="[KB URL]" target="_blank" rel="noopener" style="color:#38bdf8;">[KB Number] ↗</a></td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+            <td style="padding:10px 14px;color:#e0e7ff;">[Product Name]</td>
+            <td style="padding:10px 14px;color:#e0e7ff;">[Build X.X.X]</td>
+            <td style="padding:10px 14px;color:#34d399;">[Build X.X.X]</td>
+            <td style="padding:10px 14px;"><a href="[KB URL]" target="_blank" rel="noopener" style="color:#38bdf8;">[KB Number] ↗</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  -->
+
+  <!-- ─────────────────────────────────────────────────────── -->
+
+  <!-- ── Footer ──────────────────────────────────────────── -->
+  <footer class="mt-12 pt-6 border-t border-gray-300 text-center">
+
+    <!-- <h3 class="text-lg font-base text-gray-800 text-center mb-2">Found this article valuable?</h3>
+    <div class="mt-4 mb-8 flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+      <a class="libutton shadow-md" href="https://cybersense.solutions/newsletter.html#subscribe" target="_blank" rel="noopener">Subscribe to the Daily Brief</a>
+      <button id="shareButton" class="inline-block px-12 py-3 bg-blue-700 text-gray-900 font-medium rounded-full hover:bg-cyan-500 transition duration-150 shadow-md">Share this Article</button>
+    </div> -->
+
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">
+        &copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>
+        Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong>
+      </p>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  const shareButton = document.getElementById('shareButton');
+  if (shareButton) {
+    shareButton.addEventListener('click', () => {
+      if (navigator.share) {
+        navigator.share({
+          title: '[Title] — CyberSense.Solutions',
+          text: '[BriefDescription]',
+          url: window.location.href
+        }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          shareButton.textContent = 'Link Copied!';
+          setTimeout(() => { shareButton.textContent = 'Share this Article'; }, 2000);
+        });
+      }
+    });
+  }
+</script>
+</body>
+</html>

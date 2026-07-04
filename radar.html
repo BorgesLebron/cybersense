@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png">
+<title>Threat Radar — CyberSense.Solutions</title>
+<meta name="description" content="Active CVEs, adversary campaigns, and threat tracking — organized by severity.">
+<link rel="stylesheet" href="styles.css">
+<style>
+/* ── Page shell ── */
+body { background: #04080f; color: rgba(255,255,255,0.82); }
+
+/* ── Page Header ── */
+.radar-header {
+  background: #04080f;
+  padding: 56px 24px 40px;
+  border-bottom: 1px solid rgba(0,212,255,0.1);
+}
+.radar-header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.radar-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 99px;
+  padding: 5px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #f87171;
+  margin-bottom: 14px;
+}
+.radar-live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 8px rgba(239,68,68,0.9);
+  animation: rpulse 1.6s infinite;
+}
+@keyframes rpulse {
+  0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239,68,68,.7); }
+  70%  { transform: scale(1);    box-shadow: 0 0 0 5px rgba(239,68,68,0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+}
+.radar-title {
+  font-size: clamp(28px, 4vw, 42px);
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -1px;
+  margin-bottom: 8px;
+}
+.radar-subtitle {
+  font-size: 15px;
+  color: rgba(255,255,255,0.42);
+  line-height: 1.6;
+}
+.radar-updated {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: rgba(255,255,255,0.28);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── Severity Summary Bar ── */
+.sev-bar {
+  background: #060f1e;
+  border-bottom: 1px solid rgba(0,212,255,0.08);
+  padding: 16px 24px;
+}
+.sev-bar-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.sev-tile {
+  border-radius: 6px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid;
+}
+.sev-tile-critical { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.06); }
+.sev-tile-high     { border-color: rgba(249,115,22,0.35); background: rgba(249,115,22,0.06); }
+.sev-tile-medium   { border-color: rgba(234,179,8,0.35);  background: rgba(234,179,8,0.06); }
+.sev-tile-low      { border-color: rgba(34,197,94,0.25);  background: rgba(34,197,94,0.05); }
+.sev-tile-count {
+  font-size: 26px;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1;
+}
+.sev-tile-critical .sev-tile-count { color: #f87171; }
+.sev-tile-high .sev-tile-count     { color: #fb923c; }
+.sev-tile-medium .sev-tile-count   { color: #facc15; }
+.sev-tile-low .sev-tile-count      { color: #4ade80; }
+.sev-tile-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+}
+
+/* ── Threat Table ── */
+.radar-body {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+}
+.radar-table-wrap {
+  border: 1px solid rgba(0,212,255,0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.radar-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.radar-table thead th {
+  background: rgba(0,0,0,0.4);
+  color: rgba(255,255,255,0.32);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(0,212,255,0.1);
+  font-family: 'JetBrains Mono', monospace;
+}
+.radar-table tbody tr {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: background 0.15s;
+}
+.radar-table tbody tr:last-child { border-bottom: none; }
+.radar-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+.radar-table td {
+  padding: 14px 16px;
+  color: rgba(255,255,255,0.75);
+  vertical-align: middle;
+}
+.threat-name {
+  font-weight: 600;
+  color: #f1f5f9;
+  font-size: 13.5px;
+}
+.threat-desc {
+  font-size: 12px;
+  color: rgba(255,255,255,0.42);
+  margin-top: 3px;
+}
+.sev-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.sev-critical { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+.sev-high     { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
+.sev-medium   { background: rgba(234,179,8,0.15);  color: #facc15; border: 1px solid rgba(234,179,8,0.3); }
+.sev-low      { background: rgba(34,197,94,0.12);  color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+.cvss-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  color: #fff;
+  font-size: 13px;
+}
+.radar-source {
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  font-family: 'JetBrains Mono', monospace;
+}
+.radar-category-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(0,212,255,0.7);
+  border: 1px solid rgba(0,212,255,0.18);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+/* ── Empty state / Add-row hint ── */
+.radar-hint {
+  text-align: center;
+  padding: 48px 24px;
+  color: rgba(255,255,255,0.22);
+  font-size: 13px;
+  display: none; /* show when table is empty */
+}
+
+/* ── Section label above table ── */
+.radar-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--cs-cyan);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.radar-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(0,212,255,0.12);
+}
+
+@media(max-width: 768px) {
+  .sev-bar-inner { grid-template-columns: repeat(2,1fr); }
+  .radar-header-inner { flex-direction: column; align-items: flex-start; }
+  .radar-updated { text-align: left; }
+  .radar-table thead { display: none; }
+  .radar-table, .radar-table tbody, .radar-table tr, .radar-table td { display: block; width: 100%; }
+  .radar-table tr { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .radar-table td { padding: 2px 0; border: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <a href="index.html" class="nav-wordmark">CyberSense<span>.Solutions</span></a>
+  <ul class="nav-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="about.html">About</a></li>
+    <li><a href="radar.html" class="active">Radar</a></li>
+    <li><a href="intelligence.html">Intel</a></li>
+    <li><a href="newsletter.html">Newsletter</a></li>
+    <li><a href="resources.html">Resources</a></li>
+  </ul>
+  <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="nav-drawer" id="nav-drawer">
+  <ul>
+    <li><a href="index.html">Home</a></li>
+    <li><a href="about.html">About</a></li>
+    <li><a href="radar.html">Radar</a></li>
+    <li><a href="intelligence.html">Intel</a></li>
+    <li><a href="newsletter.html">Newsletter</a></li>
+    <li><a href="resources.html">Resources</a></li>
+  </ul>
+</div>
+
+<!-- ── Page Header ── -->
+<div class="radar-header">
+  <div class="radar-header-inner">
+    <div>
+      <div class="radar-live-pill"><span class="radar-live-dot"></span>Active Tracking</div>
+      <h1 class="radar-title">Threat Radar</h1>
+      <p class="radar-subtitle">Active CVEs, adversary campaigns, and vulnerability tracking — organized by severity.</p>
+    </div>
+    <div class="radar-updated">
+      Last updated: <!-- EDIT: Update this date manually --><br>
+      <strong style="color:rgba(255,255,255,0.5);">July 4, 2026</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ── Severity Summary Tiles ── -->
+<!-- EDIT: Update counts manually as you add/remove rows -->
+<div class="sev-bar">
+  <div class="sev-bar-inner">
+    <div class="sev-tile sev-tile-critical">
+      <div>
+        <div class="sev-tile-count" id="count-critical">0</div>
+        <div class="sev-tile-label">Critical</div>
+      </div>
+    </div>
+    <div class="sev-tile sev-tile-high">
+      <div>
+        <div class="sev-tile-count" id="count-high">0</div>
+        <div class="sev-tile-label">High</div>
+      </div>
+    </div>
+    <div class="sev-tile sev-tile-medium">
+      <div>
+        <div class="sev-tile-count" id="count-medium">0</div>
+        <div class="sev-tile-label">Medium</div>
+      </div>
+    </div>
+    <div class="sev-tile sev-tile-low">
+      <div>
+        <div class="sev-tile-count" id="count-low">0</div>
+        <div class="sev-tile-label">Low</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Threat Table ── -->
+<div class="radar-body">
+  <p class="radar-section-label">Current Threat Ledger</p>
+
+  <div class="radar-table-wrap">
+    <table class="radar-table" id="threat-table">
+      <thead>
+        <tr>
+          <th>Threat / CVE</th>
+          <th>Severity</th>
+          <th>CVSS</th>
+          <th>Category</th>
+          <th>Source</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody id="threat-tbody">
+        <!-- ─────────────────────────────────────────────────────────────
+             HOW TO ADD A THREAT ROW:
+             Copy the block below, paste inside this <tbody>, and fill in:
+             - data-sev: "critical" | "high" | "medium" | "low"
+             - Threat name, description, CVSS, category, source, date
+        ──────────────────────────────────────────────────────────────── -->
+
+        <!-- EXAMPLE ROW — delete this and add your real entries -->
+        <tr data-sev="critical">
+          <td>
+            <div class="threat-name">CVE-XXXX-XXXXX — Example Threat</div>
+            <div class="threat-desc">Brief description of the vulnerability or campaign goes here.</div>
+          </td>
+          <td><span class="sev-badge sev-critical">Critical</span></td>
+          <td><span class="cvss-val">9.8</span></td>
+          <td><span class="radar-category-tag">Supply Chain</span></td>
+          <td class="radar-source">CISA KEV</td>
+          <td class="radar-source">Jul 4, 2026</td>
+        </tr>
+
+        <!-- ADD MORE ROWS HERE -->
+
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:20px;font-size:12px;color:rgba(255,255,255,0.22);font-family:'JetBrains Mono',monospace;">
+    Sources: CISA KEV · NVD · MITRE ATT&CK · Vendor Security Advisories
+  </p>
+</div>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">CyberSense<span>.Solutions</span></div>
+        <p class="footer-mission">Delivering clear, practical, and timely cybersecurity intelligence — building awareness, resilience, and a culture that takes care of itself.</p>
+        <div class="footer-socials">
+          <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" class="footer-social-icon">in</a>
+          <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" class="footer-social-icon">f</a>
+          <a href="https://x.com/cybersensesec" target="_blank" class="footer-social-icon">𝕏</a>
+          <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" class="footer-social-icon">ig</a>
+          <a href="https://www.threads.com/@cybersense.solutions" target="_blank" class="footer-social-icon">tt</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Platform</h4>
+        <ul>
+          <li><a href="index.html">Home</a></li>
+          <li><a href="about.html">About</a></li>
+          <li><a href="radar.html">Threat Radar</a></li>
+          <li><a href="intelligence.html">Intel Briefs</a></li>
+          <li><a href="newsletter.html">Newsletter</a></li>
+          <li><a href="resources.html">Resources</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="about.html#contact">Contact Us</a></li>
+          <li><a href="#">Cookie Policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 CyberSense.Solutions. All rights reserved.</span>
+      <span>Security awareness starts here.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Auto-count severity tiles from table rows
+function updateSevCounts() {
+  const rows = document.querySelectorAll('#threat-tbody tr[data-sev]');
+  const counts = { critical: 0, high: 0, medium: 0, low: 0 };
+  rows.forEach(r => {
+    const s = r.dataset.sev;
+    if (counts[s] !== undefined) counts[s]++;
+  });
+  document.getElementById('count-critical').textContent = counts.critical;
+  document.getElementById('count-high').textContent     = counts.high;
+  document.getElementById('count-medium').textContent   = counts.medium;
+  document.getElementById('count-low').textContent      = counts.low;
+}
+updateSevCounts();
+
+// Mobile nav
+const hamburger = document.getElementById('hamburger');
+const drawer    = document.getElementById('nav-drawer');
+if (hamburger && drawer) {
+  hamburger.addEventListener('click', () => {
+    const open = drawer.classList.toggle('open');
+    hamburger.setAttribute('aria-expanded', open);
+  });
+}
+</script>
+</body>
+</html>
