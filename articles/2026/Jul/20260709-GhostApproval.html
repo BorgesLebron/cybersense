@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | GhostApproval</title>
+<meta property="og:title" content="GhostApproval: When AI Agents Know Better but Tell You Less"/>
+<meta property="og:description" content="A category-level vulnerability disclosed by Wiz Research on July 8, 2026 exposes a fundamental trust boundary failure across six AI coding assistants, exploiting symbolic links to bypass human-in-the-loop approval."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/GhostApproval.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Jul/20260709-GhostApproval.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">GhostApproval</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">
+      GhostApproval: When AI Agents Know Better but Tell You Less
+    </h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">GhostApproval</span>
+      <span class="tag-badge">Symlink Traversal</span>
+      <span class="tag-badge">CWE-61 / CWE-451</span>
+      <span class="tag-badge">AI Coding Assistants</span>
+      <span class="tag-badge">Developer Endpoint</span>
+      <span class="tag-badge">Wiz Research</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-high"><strong>Severity:</strong> High</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: July 9, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/GhostApproval.png" alt="GhostApproval — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- SECTION 1 — EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">
+      A category-level vulnerability pattern disclosed by Wiz Research on July 8, 2026 has exposed a fundamental trust boundary failure across six widely adopted AI coding assistants: Amazon Q Developer, Anthropic Claude Code, Augment, Cursor, Google Antigravity, and Windsurf. Designated GhostApproval, the vulnerability class exploits symbolic links — a Unix-era file system primitive with a well-documented exploitation history — to direct an AI coding agent to read from or write to files outside the project workspace sandbox.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">
+      What makes GhostApproval particularly significant is not the symlink technique itself, but a compounding flaw: in several documented cases, the agent's internal reasoning correctly identified the sensitive target while the user-facing confirmation prompt concealed it entirely. The user approves what appears to be a routine configuration edit; the agent writes to system-level files such as SSH authorized keys or shell initialization scripts. Amazon, Cursor, and Google have deployed fixes. Augment and Windsurf acknowledged the report but had not released patches at the time of disclosure. Anthropic disputed the finding's scope, though current Claude Code versions now warn users before writing to sensitive files.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">
+      <strong>Immediate actionable guidance:</strong> Verify all AI coding assistants in active development use are updated to patched versions, and establish controls around untrusted repository access pending remediation from all affected vendors.
+    </p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> GhostApproval is not simply a symlink exploit — it is a compound failure in which an AI agent's internal reasoning correctly identifies a sensitive file target while the user-facing approval interface conceals that information, rendering the human-in-the-loop confirmation model structurally inert.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2 — WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      The GhostApproval vulnerability class was discovered by Wiz Research during an internal assessment of AI coding assistant security in February 2026. The inquiry began with a foundational question: what happens when a user-controlled workspace contains a symbolic link pointing outside that workspace? Symlink following — classified as CWE-61 and documented as an attack primitive in contexts ranging from container escapes to package manager exploits — had not been formally examined within the specific operational context of AI agents possessing autonomous file read and write capability. The answer proved consistent across six major vendor products.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      The attack mechanism is structurally straightforward. A threat actor crafts a malicious repository in which a file appears to be a routine project configuration artifact — for example, a file named <code>project_settings.json</code> — but is in fact a symbolic link pointing to a sensitive system path such as <code>~/.ssh/authorized_keys</code> or <code>~/.zshrc</code>. When a developer clones the repository and instructs an AI coding assistant to initialize the workspace, follow a README, or update a configuration, the agent reads the symlink's apparent path, follows it to the actual target, and writes specified content to that target. In several tested implementations, the agent completed these writes before presenting any approval prompt to the user.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      Wiz reported its findings to all six affected vendors beginning February 12, 2026, and coordinated public disclosure on July 8, 2026. Vendor responses diverged considerably. Amazon Web Services engaged collaboratively, assigned CVE-2026-12958, and deployed a fix in language server version 1.69.0 by May 27, 2026. Cursor issued CVE-2026-50549 and released a remediation in version 3.0 by June 5, 2026. Google Antigravity deployed a fix in May 2026 and was still evaluating CVE issuance at the time of disclosure. Augment and Windsurf acknowledged receipt of the reports but had not released patches or communicated remediation timelines as of July 8, 2026.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      Anthropic's response introduced a notable interpretive dimension. Anthropic's initial assessment characterized the behavior as falling outside the current threat model on the grounds that the user had explicitly trusted the workspace directory and approved the confirmation prompt. Wiz subsequently demonstrated a specific instance of CWE-451, User Interface Misrepresentation of Critical Information: Claude Code's internal reasoning chain explicitly identified <code>project_settings.json</code> as a symbolic link to a sensitive configuration file, yet the confirmation prompt presented to the user read simply, "Make this edit to project_settings.json?" The agent possessed accurate knowledge of the true target; the user did not. Anthropic confirmed that symlink warning functionality had shipped in Claude Code version 2.1.32 on February 5, 2026 — nine days before Wiz submitted its report — as part of proactive internal security hardening.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      Testing was conducted on macOS and Linux systems. Researchers noted the vulnerability pattern could extend to Windows environments under certain conditions.
+    </p>
+  </div>
+
+  <!-- SECTION 3 — WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+
+    <h3 class="text-lg font-semibold mb-2">For Security Practitioners</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">
+      GhostApproval does not introduce a novel attack class in the traditional sense; CWE-61 is well-catalogued with decades of documented exploitation. Its significance here lies in the deployment context: AI coding assistants operate with elevated trust and autonomous file system access within environments that practitioners have not generally subjected to the same threat modeling applied to other privileged software. The compounding presence of CWE-451 introduces a failure mode that is particularly difficult to detect, because it does not produce anomalous network behavior or unusual process activity. It produces a legitimate file write to a sensitive path, initiated by a tool the developer installed and trusted. The realistic attack path is operationally credible through typosquatted open-source packages, fraudulent coding assessment repositories, or malicious pull requests targeting developers in CI/CD pipelines.
+    </p>
+
+    <hr>
+
+    <h3 class="text-lg font-semibold mb-2">For Security Leaders &amp; Executives</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">
+      GhostApproval surfaces a governance gap that organizations with significant AI-assisted development activity should treat as a near-term risk item. Developer endpoints represent a high-value target environment: SSH keys, cloud credentials, API tokens, and shell configuration files are routinely present in developer home directories. A successful GhostApproval exploitation chain that installs an attacker-controlled SSH public key or injects a reverse shell into a shell initialization file produces persistent, credential-independent access to the developer's machine and potentially to the broader environment accessible from it. The variation in vendor response carries institutional implications: trust boundary definitions for AI coding assistants are not yet standardized across the industry, and security programs cannot assume uniform security posture.
+    </p>
+
+    <hr>
+
+    <h3 class="text-lg font-semibold mb-2">For Policy-Aware &amp; Workforce Development Professionals</h3>
+    <p class="text-gray-800 text-sm leading-relaxed">
+      GhostApproval contributes to a growing body of evidence that the "human-in-the-loop" design pattern — widely cited as a foundational AI safety mechanism — requires more precise operational definition than current implementations consistently provide. The approval loop is only meaningful if the human receives accurate information before acting. This research documents a specific, exploitable failure mode in which formal consent is present but substantive consent is absent, because the information presented to the user does not reflect the action the system will take. Organizations developing internal AI governance policies, acceptable-use frameworks, or developer training programs should treat this distinction as a first-order design principle.
+    </p>
+  </div>
+
+  <!-- SECTION 4 — OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+
+    <h3 class="text-lg font-semibold mb-2">Immediate (Days to Weeks)</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      Developer endpoints using any of the six identified AI coding assistants should be evaluated against current patch status. For Amazon Q Developer, the fixed language server version is 1.69.0, which updates automatically unless network configuration prevents it. For Cursor, version 3.0 addresses CVE-2026-50549. Google Antigravity current versions address the vulnerability as of May 2026. Augment and Windsurf remain unpatched at time of disclosure; organizations relying on these tools should implement compensating controls and apply heightened scrutiny to any repository introduced to these environments. Claude Code versions 2.1.32 and later include symlink warning functionality. Organizations should treat opening any untrusted repository in an AI coding assistant with the same procedural caution applied to executing untrusted code.
+    </p>
+
+    <h3 class="text-lg font-semibold mb-2">Short-Term (Weeks to Months)</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      Incident response procedures for developer endpoint compromises should be updated to include indicators consistent with GhostApproval-style exploitation: unexpected modifications to <code>~/.ssh/authorized_keys</code>, additions to shell initialization files such as <code>~/.zshrc</code> or <code>~/.bashrc</code>, and file writes to system configuration paths originating from AI coding assistant processes. Procurement and vendor evaluation criteria for AI coding tools should be expanded to include explicit questions about sandbox enforcement, symlink resolution policy, and whether confirmation dialogs resolve and display canonical file paths before presenting the user with an approval decision.
+    </p>
+
+    <h3 class="text-lg font-semibold mb-2">Long-Term (Months to Years)</h3>
+    <p class="text-gray-800 text-sm leading-relaxed">
+      GhostApproval is one of several concurrent research disclosures — including the GuardFall shell injection bypass affecting open-source AI agents and the SymJack attack technique — that collectively indicate the AI coding assistant category has not yet undergone the sustained adversarial pressure that drives security maturation. Formal trust boundary governance for AI agents — defining what an agent may read, write, or execute within a given context, independent of user approval — is likely to become an explicit compliance concern as AI-assisted development scales across regulated industries.
+    </p>
+  </div>
+
+  <!-- SECTION 5 — RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">
+      Actions are organized by organizational maturity. Augment and Windsurf remain unpatched; treat these as exposed environments requiring active compensating controls.
+    </p>
+
+    <div class="action-tier">
+      <div class="action-tier-label">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* For organizations with limited security tooling or smaller teams.</p>
+      <ul>
+        <li>1 — Verify all AI coding assistants in use are updated to the latest available patched versions; consult vendor advisories for Amazon Q Developer (1.69.0), Cursor (v3.0), and Claude Code (2.1.32+).</li>
+        <li>2 — Establish a team-wide practice of not opening or trusting repositories from unverified sources in AI coding assistants — mirror guidance applied to executing untrusted code.</li>
+        <li>3 — Brief developers on the GhostApproval attack pattern: a repository can contain a file appearing to be a routine configuration artifact that is actually a symbolic link to a sensitive system path.</li>
+        <li>4 — Verify that SSH authorized keys files across developer endpoints have not been modified unexpectedly.</li>
+      </ul>
+    </div>
+
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#fbbf24;">⬤ Intermediate Maturity Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* For organizations with dedicated security functions and endpoint visibility.</p>
+      <ul>
+        <li>1 — Extend endpoint detection coverage to monitor file writes to high-sensitivity paths (<code>~/.ssh/authorized_keys</code>, <code>~/.zshrc</code>, <code>~/.bashrc</code>, <code>~/.bash_profile</code>) and correlate against AI coding assistant process trees.</li>
+        <li>2 — Implement a review gate for AI coding assistants used in CI/CD pipelines requiring human validation of the repository source before automated agent processing begins.</li>
+        <li>3 — Review and update developer workstation security baselines: ensure SSH agent forwarding is disabled by default and cloud credential files are stored with appropriate access controls.</li>
+        <li>4 — Include GhostApproval-class symlink attacks in tabletop exercises or developer security awareness sessions.</li>
+      </ul>
+    </div>
+
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#f87171;">⬤ Advanced Institutional Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* For organizations with mature security programs and threat intelligence capacity.</p>
+      <ul>
+        <li>1 — Implement runtime monitoring capable of detecting symlink creation events at repository clone time where the resolved path falls outside the workspace directory.</li>
+        <li>2 — Integrate GhostApproval-related indicators — repository files that are symbolic links to paths outside the project directory — into pre-processing scans for repositories introduced via package managers, pull requests, or direct clones.</li>
+        <li>3 — Develop internal policy formally classifying AI coding assistants as privileged software subject to the same procurement, approval, and monitoring lifecycle applied to other tools with file system write access to developer endpoints.</li>
+        <li>4 — Engage with vendors on their trust boundary enforcement roadmap; maintain active tracking against the open remediation status of Augment and Windsurf pending patch availability.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECTION 6 — CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      The symbolic link is a decades-old file system concept, and its potential for misuse has been documented in security literature since the early Unix era. That six current AI coding assistants — products from organizations with substantial security engineering resources — were found susceptible to GhostApproval is not primarily a story about overlooked legacy threats. It is a story about the pace of AI deployment outrunning the maturation of the security engineering discipline surrounding it.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      The human-in-the-loop model has been widely cited as a core assurance mechanism for autonomous AI systems. GhostApproval documents one way that model can fail — not through technical circumvention, but through informational incompleteness. An agent that knows something the user does not, and a UI design that keeps it that way, does not constitute a meaningful approval process. Bridging that gap — from what the agent knows to what the user sees — is not a peripheral design concern. It is the discipline of informed institutional resilience applied to the AI era.
+    </p>
+    <div class="pull-quote">
+      "The strength of any approval process is only as reliable as the accuracy of the information on which it rests."
+    </div>
+  </div>
+
+  <!-- Technical Data -->
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row">
+      <span class="strip-key">CVE/ID:</span>
+      <span class="strip-val">CVE-2026-12958 — Amazon Q Developer / Language Servers for AWS (arbitrary file write via symlink traversal) | CVE-2026-50549 — Cursor (sandbox escape via symlink canonicalization bypass) | CWE-61 — Improper Link Resolution Before File Access (Symlink Following) | CWE-451 — User Interface Misrepresentation of Critical Information | Google Antigravity CVE — Pending issuance at time of publication</span>
+    </div>
+    <div class="strip-row">
+      <span class="strip-key">CVSS Score:</span>
+      <span class="strip-val">CVE-2026-12958: High (AWS-assigned; specific base score pending public advisory update) | CVE-2026-50549: Critical (vendor-designated) | Note: CVSS base scores not fully enumerated at time of public disclosure for all affected products</span>
+    </div>
+    <div class="strip-row">
+      <span class="strip-key">Classification:</span>
+      <span class="strip-val">Supply Chain / AI Agent Trust Boundary Exploitation / Symlink Traversal (CWE-61) / UI Misrepresentation of Critical Information (CWE-451) / Developer Endpoint Compromise / Informed Consent Bypass</span>
+    </div>
+    <div class="strip-row">
+      <span class="strip-key">Announced:</span>
+      <span class="strip-val">July 8, 2026 — Wiz Research (Maor Dokhanian); coordinated multi-vendor disclosure</span>
+    </div>
+    <div class="strip-row">
+      <span class="strip-key">Tracked Activity:</span>
+      <span class="strip-val">No specific threat actor attribution. No confirmed in-the-wild exploitation reported as of July 8, 2026. Related research: GuardFall shell injection bypass (Adversa AI, July 2, 2026); SymJack AI symlink attack technique (June 29, 2026).</span>
+    </div>
+    <div class="strip-row">
+      <span class="strip-key">Attack Vectors:</span>
+      <span class="strip-val">Symbolic link embedded in a malicious repository, disguised as a project configuration file, pointing to a sensitive system path outside the workspace directory; agent follows symlink during a file write operation; confirmation prompt conceals the true write target from the user (CWE-451); in some implementations, pre-authorization writes complete before user approval is sought.</span>
+    </div>
+    <div class="strip-row">
+      <span class="strip-key">Target Platforms:</span>
+      <span class="strip-val">macOS, Linux (confirmed); Windows (possible under specific conditions per Wiz Research); AI coding assistant process contexts with file system read/write access.</span>
+    </div>
+    <div class="strip-row">
+      <span class="strip-key">Target Product:</span>
+      <span class="strip-val">Amazon Q Developer — fixed in Language Server v1.69.0 (May 27, 2026) | Cursor — fixed in v3.0 (June 5, 2026); CVE-2026-50549 | Google Antigravity — fixed May 2026; CVE pending | Anthropic Claude Code — symlink warning added in v2.1.32 (February 5, 2026) | Augment — v0.754.3 tested; remediation in progress | Windsurf — V1.9566 tested; remediation in progress</span>
+    </div>
+    <div class="strip-row">
+      <span class="strip-key">Target Environment:</span>
+      <span class="strip-val">Developer workstations with AI coding assistant installations; development pipelines and CI/CD systems that process untrusted repositories through AI agents; any environment where developer home directory credential files — SSH keys, cloud credentials, shell configuration files — are accessible to the AI coding assistant process.</span>
+    </div>
+    <div class="strip-row">
+      <span class="strip-key">Exposure Window:</span>
+      <span class="strip-val">Vulnerability class discovered February 10, 2026 by Wiz Research. AWS fix deployed May 27, 2026; Google fix deployed May 22, 2026; Cursor fix deployed June 5, 2026. Augment and Windsurf remain unpatched as of July 8, 2026 — implement compensating controls pending vendor remediation.</span>
+    </div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">
+        &copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>
+        Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong>
+      </p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
