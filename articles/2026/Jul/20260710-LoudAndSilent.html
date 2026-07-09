@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | The Loud and the Silent: How Factory-v3 Loaders Deploy Vidar and XMRig as a Dual-Monetization Payload</title>
+<meta property="og:title" content="The Loud and the Silent: How Factory-v3 Loaders Deploy Vidar and XMRig as a Dual-Monetization Payload"/>
+<meta property="og:description" content="A coordinated campaign documented by Palo Alto Networks Unit 42 deploys paired payloads — Vidar Stealer 2.0 and XMRig Monero miner — through Factory-v3 Go-compiled loaders, creating a dual-alert environment where the visible threat is the distraction and the urgent threat has already finished its work."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/LoudAndSilent.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Jul/20260710-LoudAndSilent.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">The Loud and the Silent</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">
+      The Loud and the Silent: How Factory-v3 Loaders Deploy Vidar and XMRig as a Dual-Monetization Payload
+    </h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">Vidar Stealer</span>
+      <span class="tag-badge">XMRig</span>
+      <span class="tag-badge">Factory-v3</span>
+      <span class="tag-badge">MaaS</span>
+      <span class="tag-badge">AMSI Evasion</span>
+      <span class="tag-badge">Session Cookie Theft</span>
+      <span class="tag-badge">Malvertising</span>
+      <span class="tag-badge">Cryptojacking</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-high"><strong>Severity:</strong> High</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: July 10, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/LoudAndSilent.png" alt="The Loud and the Silent — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- SECTION 1 — EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">
+      A coordinated, high-volume malware campaign documented by Palo Alto Networks Unit 42 on July 8, 2026 is deploying paired payloads — Vidar Stealer version 2.0 and the XMRig Monero miner — through a Go-compiled loader framework designated Factory-v3. The campaign reaches endpoints through two primary delivery channels: search engine malvertising impersonating cracked software downloads, and compromised high-subscriber YouTube channels with pinned malicious file links.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">
+      The loader employs multiple evasion techniques simultaneously: password-protected archives with non-standard extensions to bypass gateway inspection, binaries padded with up to one gigabyte of null bytes to exceed sandbox processing limits, in-memory patching of the Windows AmsiScanBuffer function to disable the Anti-Malware Scan Interface, and fraudulent code-signing certificates spoofing legitimate organizations including JustWatch GmbH. Once executed, Vidar silently extracts browser credentials, session cookies, and cryptocurrency wallet data while XMRig consumes CPU resources to mine Monero. Stolen session cookies reach underground log markets within hours of compromise, enabling access brokers to bypass multi-factor authentication before the victim organization detects the breach.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">
+      <strong style="color:#38bdf8;">Immediate actionable guidance:</strong> Enforce execution blocks for binaries launched from user temporary directories and implement AMSI integrity monitoring to detect in-memory patching attempts as an immediate critical indicator.
+    </p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> Factory-v3 loaders deliver Vidar Stealer and XMRig miner as concurrent payloads, creating a dual-alert environment in which a high-CPU cryptomining alert — typically treated as low priority — may simultaneously be the cover condition for ongoing silent credential exfiltration and session cookie theft that reaches underground markets within hours of compromise.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 2 — WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      Palo Alto Networks Unit 42 published detailed technical analysis on July 8, 2026 documenting a coordinated campaign deploying the Factory-v3 Go-compiled loader framework to deliver Vidar Stealer and XMRig CoinMiner as simultaneous payloads to compromised Windows endpoints. The campaign had been expanding through mid-to-late Q2 2026, with the "X3D MINER" campaign tag appearing in Telegram-based affiliate notification infrastructure used by the threat operators. Factory-v3 is a Go-language malware builder producing loader binaries with consistent metadata characteristics across the affiliate ecosystem — Go-compiled binaries are cross-compilable, produce large binaries whose size can be further inflated for sandbox evasion, and add obfuscation complexity relative to conventional C or C++ compiled malware.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      The campaign operates through two documented delivery channels. The first is malvertising: search engine advertisements appearing in response to queries for cracked or pirated commercial software, directing users to download pages that serve the malicious payload. The second is more structurally sophisticated: compromised YouTube channels with subscriber counts in the millions, where threat operators have gained control of the account and pinned video descriptions or comments linking to the malicious payload. The scale of subscriber counts provides search ranking legitimacy and a volume of potential victims that malvertising alone does not reliably achieve.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      The payload delivery chain begins with a password-protected archive using a .bin or .rar extension — a deliberate choice that prevents automated gateway inspection tools from opening and scanning the archive contents. Once extracted, the user encounters a binary padded with hundreds of megabytes to as much as one gigabyte of null bytes — inert data inserted solely to inflate the file beyond the maximum size most automated sandbox environments process. Once executed, the loader applies an in-memory patch to the Windows AmsiScanBuffer function, preventing AMSI-integrated security tools from scanning subsequently loaded content. The loader also presents a fraudulent code-signing certificate spoofing JustWatch GmbH, a legitimate German streaming guide service whose identity was appropriated to make the binary appear signed by a known organization.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      With defenses suppressed, Factory-v3 deploys two payloads. Vidar Stealer version 2.0 extracts stored credentials from modern web browsers, active session cookies, cryptocurrency wallet files, and autofill data. Browser session cookies are particularly high-value targets because they can be replayed to authenticate to web applications without re-entering credentials and without triggering multi-factor authentication prompts — the MFA challenge has already been completed by the legitimate user whose session is being cloned. Exfiltrated data is transmitted to command-and-control infrastructure routing through Telegram layers with a hardcoded IP node at 136.243.203[.]109. Concurrently, XMRig deploys and begins mining Monero using the endpoint's CPU. The Laplas Clipper, a clipboard-hijacking tool that substitutes cryptocurrency wallet addresses in clipboard content, has also been observed in select Factory-v3 deployments, adding a third monetization mechanism.
+    </p>
+  </div>
+
+  <!-- SECTION 3 — WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+
+    <h3 class="text-lg font-semibold mb-2">For Security Practitioners &amp; SOC Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">
+      The combination of Vidar and XMRig in a single deployment creates a deliberate detection asymmetry. XMRig's CPU utilization is immediately and measurably visible: sustained high CPU usage generates help desk tickets, hardware anomaly alerts, and user complaints. Vidar's credential extraction, by contrast, is designed to be silent and brief — it completes its harvest quickly, exfiltrates the data, and does not persistently burden system resources. The operational consequence for SOC teams is specific: a high-CPU alert classified as low-severity adware or potentially unwanted program activity — the conventional disposition for coin miner detections — may be simultaneously masking an active credential exfiltration event that is already complete by the time the alert is reviewed. Detection workflows that defer miner alerts to lower-priority queues should be reassessed immediately. Any miner detection should prompt parallel investigation of credential and session cookie exfiltration indicators on the same host within the same investigation window.
+    </p>
+
+    <hr>
+
+    <h3 class="text-lg font-semibold mb-2">For Security Leaders &amp; CISOs</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">
+      The session cookie theft component has direct implications for identity architectures that rely on MFA as the primary control against unauthorized access. Session cookies represent a post-authentication artifact: the MFA challenge has already been passed by the legitimate user. A replayed session cookie bypasses MFA entirely because the web application treats the cookie as evidence of a previously completed authentication. Enterprise cloud environments, SaaS portals, and internal web applications that do not implement session binding controls are vulnerable to session replay with stolen cookies regardless of MFA policy. The use of compromised YouTube channels with multi-million subscriber counts as a distribution vehicle also represents a significant trust exploitation — standard security awareness training focused on unfamiliar or suspicious sources does not address this vector effectively.
+    </p>
+
+    <hr>
+
+    <h3 class="text-lg font-semibold mb-2">For Policy, Risk &amp; Compliance Officers</h3>
+    <p class="text-gray-800 text-sm leading-relaxed">
+      The downstream market for data harvested by Vidar operates on a compressed timeline with significant implications for breach response and notification obligations. Stolen session cookies and corporate credentials are documented to reach underground log markets and access broker channels within hours of the initial compromise event. Organizations that detect a Vidar infection after the fact face a scenario in which credential material may have already been purchased and used by secondary actors before the primary infection is identified. This compression of the breach timeline is material for incident response planning: the window between initial compromise and potential secondary exploitation is shorter than conventional response timelines assume. The HHS Cybersecurity Program's analyst note specifically documents vectors through which stolen session credentials are weaponized against regulated healthcare portals, with direct implications for PHI access exposure.
+    </p>
+  </div>
+
+  <!-- SECTION 4 — OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      <strong style="color:#38bdf8;">Immediate (Days to Weeks):</strong> Any endpoint reporting sustained anomalous CPU utilization should be treated as a potential dual-payload deployment and investigated for concurrent credential exfiltration indicators — not dispositioned solely as a miner detection. Immediate investigative steps include examination of browser credential stores and session cookie databases for signs of access or modification, review of recently executed processes for Factory-v3 loader characteristics (large binary sizes, execution from Temp or AppData directories, Go runtime metadata), and correlation of outbound network connections against the documented C2 IP 136.243.203[.]109 and Telegram routing infrastructure. Block execution of binaries from user temporary directories (%TEMP%, %AppData%, %Downloads%) as an immediate compensating control.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      <strong style="color:#38bdf8;">Short-Term (Weeks to Months):</strong> Implement AMSI integrity monitoring as a detection capability. The AmsiScanBuffer memory patch applied by Factory-v3 loaders is a detectable modification: endpoint security tools capable of monitoring the integrity of in-memory function pointers can detect this patch as it is applied and generate an immediate high-priority alert. This detection is loader-agnostic — any malware that patches AMSI in memory will trigger the same alert regardless of the specific payload being loaded. Review secure email gateway and web proxy configurations for maximum file size handling: files passed through as a default exception specifically enable the null-byte inflation strategy built into Factory-v3.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      <strong style="color:#38bdf8;">Long-Term (Months to Years):</strong> Factory-v3 represents the industrialization of multi-payload malware delivery: a modular builder enabling MaaS affiliates with varying technical sophistication to deploy combined credential theft, cryptomining, and clipboard hijacking as a pre-configured package. Security programs that associate these evasion techniques with nation-state or advanced persistent threat actors should revise that assumption; these capabilities are now accessible at the commodity MaaS tier. Security architecture roadmaps should account for the convergence of stealer and miner payloads as a normalized delivery pattern rather than an anomaly.
+    </p>
+  </div>
+
+  <!-- SECTION 5 — RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">
+      Actions are organized by organizational security maturity. The execution block and AMSI monitoring steps apply across all tiers and should be treated as immediate baselines regardless of organizational size.
+    </p>
+
+    <div class="action-tier">
+      <div class="action-tier-label">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul>
+        <li>1 - Implement execution blocks for binaries and scripts launched from user temporary and download directories via Software Restriction Policies, AppLocker rules, or Microsoft Defender for Endpoint Attack Surface Reduction rules targeting %TEMP%, %AppData%, and %Downloads%.</li>
+        <li>2 - Update web filtering policies to block access to software crack sites, file-sharing mirrors, and direct downloads of password-protected archive files (.rar, .bin, .7z) from untrusted domains.</li>
+        <li>3 - Brief employees with remote or hybrid work arrangements on the specific risk of downloading software from any source — including familiar YouTube channels — to devices with any connectivity to corporate accounts, email, or VPN.</li>
+        <li>4 - Treat any coin miner detection as a trigger for parallel investigation of the same host for credential exfiltration indicators before dispositioning the alert as low-priority adware.</li>
+      </ul>
+    </div>
+
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#fbbf24;">⬤ Intermediate Maturity Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with dedicated security functions, SIEM coverage, and structured incident response capability.</p>
+      <ul>
+        <li>1 - Configure correlation rules that link miner detection alerts with concurrent stealer behavior indicators on the same host; miner alerts should not route solely to lower-priority hardware anomaly queues.</li>
+        <li>2 - Integrate AmsiScanBuffer integrity monitoring into endpoint detection coverage; verify that in-memory AMSI patching detection is enabled and generating alerts in the current deployment configuration.</li>
+        <li>3 - Review identity and access management policies for session lifetime controls and Conditional Access requirements; reduce maximum session token lifetime on cloud and SaaS applications to limit the usable window for replayed stolen cookies.</li>
+        <li>4 - Assess session security controls on enterprise web applications for session binding features tying sessions to device fingerprint, IP address range, or certificate to reduce the utility of replayed cookies regardless of MFA policy.</li>
+      </ul>
+    </div>
+
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#f87171;">⬤ Advanced Institutional Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with mature security programs, threat intelligence capacity, and underground monitoring capability.</p>
+      <ul>
+        <li>1 - Integrate underground credential market monitoring into threat intelligence feeds to detect compromised organizational credentials and session cookies before secondary exploitation occurs.</li>
+        <li>2 - Develop behavioral profiling baselines for Factory-v3 loader characteristics independent of specific file hashes: Go runtime binary metadata patterns, null-byte padding detection, AMSI patch attempts, and XMRig mining pool communications paired with outbound Telegram API connections.</li>
+        <li>3 - Conduct a session security architecture review across all enterprise web applications and cloud infrastructure portals with particular attention to whether stolen browser cookies provide sufficient replay capability to bypass current authentication controls.</li>
+        <li>4 - Configure continuous access evaluation that revokes sessions based on risk signals independent of the session cookie's validity period across all cloud and SaaS applications where the feature is available.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- SECTION 6 — CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      The Factory-v3 campaign is not a novel technical achievement — its individual components are well-documented tools used across the commodity malware ecosystem for years. What distinguishes this campaign is its operational design: the deliberate pairing of a silent extractor with a noisy consumer, creating a detection environment where the visible threat is the less urgent one and the urgent threat is designed to be invisible until the damage is done.
+    </p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">
+      That design reflects adversarial awareness of how enterprise SOC workflows are structured — what gets triaged first, what gets deferred, and where the gap is between an alert and a response. Bridging the awareness gap in this context means recognizing that commodity malware has industrialized the same evasion and dual-monetization techniques once exclusive to targeted campaigns, and that detection and response architectures built for the prior threat model may not be calibrated for the current one.
+    </p>
+    <div class="pull-quote">
+      "When the loud threat is the distraction, the quiet one has already finished its work."
+    </div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">Vidar Stealer v2.0 (information stealer; no CVE assigned) | XMRig CoinMiner (open-source Monero CPU miner; no CVE assigned — dual-use tool deployed maliciously) | Laplas Clipper (clipboard hijacker; no CVE assigned) | Factory-v3 Go-Loader Framework (MaaS loader builder; no CVE assigned) | "X3D MINER" (campaign tag designation; Telegram-based affiliate notification infrastructure)</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">Not applicable. Multi-payload malware campaign spreading via social engineering, malvertising, and compromised legitimate channels rather than exploitation of a specific software vulnerability. Severity assessed as HIGH based on active campaign scale, confirmed credential exfiltration and MFA bypass capability, and documented rapid monetization of harvested data.</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">Malware-as-a-Service (MaaS) Affiliate Operation / Information Stealer and Cryptojacking Hybrid / Code-Signing Abuse / Anti-Malware Scan Interface (AMSI) Evasion / Session Cookie Theft / MFA Bypass via Session Replay / Dual-Payload Monetization</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">July 8, 2026 — Palo Alto Networks Unit 42 (primary technical campaign disclosure); corroborated by Fortinet FortiGuard Labs and Trend Micro Threat Research (July 2026); Blackpoint Cyber Adversary Pursuit Group (2026 threat profile update); HHS Cybersecurity Program analyst note (2026)</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Financially motivated MaaS affiliates operating under the "X3D MINER" campaign designation; distribution via Factory-v3 Go-compiled loader framework; active deployment of Vidar Stealer 2.0 and XMRig Monero miner as concurrent payloads; Laplas Clipper observed in select deployments; C2 infrastructure routing through Telegram API layers with hardcoded node at 136.243.203[.]109; stolen credential data reaching underground log markets within hours of compromise. Campaign active and expanding from mid-to-late Q2 2026 through July 2026.</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Search engine malvertising impersonating cracked commercial software downloads; compromised high-subscriber YouTube channels with pinned malicious file links; password-protected .bin/.rar archives bypassing automated gateway inspection; binary file inflation with up to one gigabyte of null-byte padding to exceed sandbox maximum file size limits; in-memory patching of Windows AmsiScanBuffer function disabling AMSI-integrated security scanning; fraudulent code-signing certificates spoofing JustWatch GmbH; Vidar credential and session cookie extraction via browser store access; XMRig Monero mining via CPU hijacking; Laplas clipboard address substitution targeting cryptocurrency transactions.</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Microsoft Windows operating systems, x64 architecture; modern web browser credential and session stores (Chrome, Edge, Firefox, and Chromium-based browsers); cryptocurrency desktop wallet files; Windows Anti-Malware Scan Interface (AMSI) in-memory subsystem.</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Web browser stored credentials, session cookies, and autofill databases; cryptocurrency wallet applications and local wallet files; Windows CPU processing resources (XMRig mining target); enterprise SaaS portals and cloud environments accessible via stolen session cookies; clipboard content for cryptocurrency address substitution (Laplas Clipper).</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Corporate enterprise endpoints including remote and hybrid workforce devices; small-to-medium businesses with limited endpoint monitoring coverage; consumer environments globally with campaign concentration in the United States and European Union. Sectors with specific downstream risk: healthcare (PHI-accessible portals via stolen session credentials), financial services (cryptocurrency wallet and banking credential targets), and any environment with SaaS or cloud portal access authenticable via session cookie replay.</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">Active and expanding campaign from mid-to-late Q2 2026; ongoing as of July 8, 2026. No patch applicable — the threat is a social engineering and malware delivery campaign requiring detection and access controls. Stolen session cookies and credentials reach underground markets within hours of compromise, creating a compressed secondary exploitation window. Organizations without AMSI integrity monitoring, execution controls on user temporary directories, or session binding controls should assess themselves as within the active exposure window.</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
