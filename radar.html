@@ -6,244 +6,287 @@
 <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png">
 <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/BorgesLebron/hectorborges-portfolio/main/assets/csicon.png">
 <title>Threat Radar — CyberSense.Solutions</title>
-<meta name="description" content="Active CVEs, adversary campaigns, and threat tracking — organized by severity.">
+<meta name="description" content="Live threat tracking — active vulnerabilities, CVEs, and adversary campaigns.">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="auth.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-geo@4.3.0/build/index.umd.min.js"></script>
 <style>
-/* ── Page shell ── */
-body { background: #04080f; color: rgba(255,255,255,0.82); }
-
-/* ── Page Header ── */
-.radar-header {
-  background: #04080f;
-  padding: 56px 24px 40px;
-  border-bottom: 1px solid rgba(0,212,255,0.1);
-}
-.radar-header-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-.radar-live-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(239,68,68,0.12);
-  border: 1px solid rgba(239,68,68,0.3);
-  border-radius: 99px;
-  padding: 5px 14px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: #f87171;
-  margin-bottom: 14px;
-}
-.radar-live-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: #ef4444;
-  box-shadow: 0 0 8px rgba(239,68,68,0.9);
-  animation: rpulse 1.6s infinite;
-}
-@keyframes rpulse {
-  0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239,68,68,.7); }
-  70%  { transform: scale(1);    box-shadow: 0 0 0 5px rgba(239,68,68,0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239,68,68,0); }
-}
-.radar-title {
-  font-size: clamp(28px, 4vw, 42px);
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: -1px;
-  margin-bottom: 8px;
-}
-.radar-subtitle {
-  font-size: 15px;
-  color: rgba(255,255,255,0.42);
-  line-height: 1.6;
-}
-.radar-updated {
-  font-size: 11px;
-  font-family: 'JetBrains Mono', monospace;
-  color: rgba(255,255,255,0.28);
-  text-align: right;
-  white-space: nowrap;
+/* ── Root / Theme ──────────────────────────────── */
+:root{
+  --cs-bg:#04080f;
+  --cs-panel:#060f1e;
+  --cs-panel2:#0a1628;
+  --cs-border:rgba(0,212,255,0.10);
+  --cs-border-glow:rgba(0,212,255,0.18);
+  --cs-cyan:#00d4ff;
+  --cs-green:#00ffa3;
+  --cs-red:#ff3b3b;
+  --cs-orange:#ff8c00;
+  --cs-yellow:#ffd700;
+  --cs-text:rgba(255,255,255,0.85);
+  --cs-dim:rgba(255,255,255,0.32);
+  --cs-dimmer:rgba(255,255,255,0.14);
+  --cs-mono:'JetBrains Mono',monospace;
 }
 
-/* ── Severity Summary Bar ── */
-.sev-bar {
-  background: #060f1e;
-  border-bottom: 1px solid rgba(0,212,255,0.08);
-  padding: 16px 24px;
-}
-.sev-bar-inner {
-  max-width: 1100px;
-  margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-.sev-tile {
-  border-radius: 6px;
-  padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid;
-}
-.sev-tile-critical { border-color: rgba(239,68,68,0.35); background: rgba(239,68,68,0.06); }
-.sev-tile-high     { border-color: rgba(249,115,22,0.35); background: rgba(249,115,22,0.06); }
-.sev-tile-medium   { border-color: rgba(234,179,8,0.35);  background: rgba(234,179,8,0.06); }
-.sev-tile-low      { border-color: rgba(34,197,94,0.25);  background: rgba(34,197,94,0.05); }
-.sev-tile-count {
-  font-size: 26px;
-  font-weight: 800;
-  font-family: 'JetBrains Mono', monospace;
-  line-height: 1;
-}
-.sev-tile-critical .sev-tile-count { color: #f87171; }
-.sev-tile-high .sev-tile-count     { color: #fb923c; }
-.sev-tile-medium .sev-tile-count   { color: #facc15; }
-.sev-tile-low .sev-tile-count      { color: #4ade80; }
-.sev-tile-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.35);
-}
+/* ── Stats Bar ─────────────────────────────────── */
+.rdr-stats{background:var(--cs-bg);padding:16px 24px;border-bottom:1px solid var(--cs-border);}
+.rdr-stats-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:10px;max-width:1440px;margin:0 auto;}
+.rdr-stat{clip-path:polygon(8px 0%,100% 0%,100% calc(100% - 8px),calc(100% - 8px) 100%,0% 100%,0% 8px);padding:14px 20px;display:flex;align-items:center;gap:14px;border:1px solid;position:relative;overflow:hidden;}
+.rdr-stat::before{content:'';position:absolute;inset:0;opacity:0.04;}
+.rdr-stat-total{border-color:rgba(0,212,255,0.45);background:rgba(0,212,255,0.06);box-shadow:0 0 15px rgba(0,212,255,0.12);}
+.rdr-stat-total::before{background:var(--cs-cyan);}
+.rdr-stat-crit{border-color:rgba(255,0,0,0.45);background:rgba(255,0,0,0.06);box-shadow:0 0 15px rgba(255,0,0,0.18);}
+.rdr-stat-crit::before{background:#ff0000;}
+.rdr-stat-high{border-color:rgba(255,107,0,0.45);background:rgba(255,107,0,0.06);box-shadow:0 0 15px rgba(255,107,0,0.15);}
+.rdr-stat-high::before{background:#ff6b00;}
+.rdr-stat-med{border-color:rgba(212,200,0,0.45);background:rgba(212,200,0,0.06);box-shadow:0 0 15px rgba(212,200,0,0.12);}
+.rdr-stat-med::before{background:#d4c800;}
+.rdr-stat-low{border-color:rgba(0,143,17,0.45);background:rgba(0,143,17,0.06);box-shadow:0 0 15px rgba(0,143,17,0.15);}
+.rdr-stat-low::before{background:#008f11;}
+.rdr-stat-label{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--cs-dim);white-space:nowrap;font-family:var(--cs-mono);}
+.rdr-stat-val{font-size:28px;font-weight:800;line-height:1;font-family:var(--cs-mono);}
+.rdr-stat-total .rdr-stat-val{color:var(--cs-cyan);}
+.rdr-stat-crit .rdr-stat-val{color:#ff4444;}
+.rdr-stat-high .rdr-stat-val{color:#ff8c40;}
+.rdr-stat-med .rdr-stat-val{color:#d4c800;}
+.rdr-stat-low .rdr-stat-val{color:#00c518;}
 
-/* ── Threat Table ── */
-.radar-body {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 32px 24px 80px;
-}
-.radar-table-wrap {
-  border: 1px solid rgba(0,212,255,0.1);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.radar-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-}
-.radar-table thead th {
-  background: rgba(0,0,0,0.4);
-  color: rgba(255,255,255,0.32);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  padding: 12px 16px;
-  text-align: left;
-  border-bottom: 1px solid rgba(0,212,255,0.1);
-  font-family: 'JetBrains Mono', monospace;
-}
-.radar-table tbody tr {
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  transition: background 0.15s;
-}
-.radar-table tbody tr:last-child { border-bottom: none; }
-.radar-table tbody tr:hover { background: rgba(255,255,255,0.03); }
-.radar-table td {
-  padding: 14px 16px;
-  color: rgba(255,255,255,0.75);
-  vertical-align: middle;
-}
-.threat-name {
-  font-weight: 600;
-  color: #f1f5f9;
-  font-size: 13.5px;
-}
-.threat-desc {
-  font-size: 12px;
-  color: rgba(255,255,255,0.42);
-  margin-top: 3px;
-}
-.sev-badge {
-  display: inline-block;
-  padding: 3px 9px;
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.sev-critical { background: rgba(239,68,68,0.15);  color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
-.sev-high     { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.3); }
-.sev-medium   { background: rgba(234,179,8,0.15);  color: #facc15; border: 1px solid rgba(234,179,8,0.3); }
-.sev-low      { background: rgba(34,197,94,0.12);  color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
-.cvss-val {
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 700;
-  color: #fff;
-  font-size: 13px;
-}
-.radar-source {
-  font-size: 11px;
-  color: rgba(255,255,255,0.3);
-  font-family: 'JetBrains Mono', monospace;
-}
-.radar-category-tag {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 600;
-  color: rgba(0,212,255,0.7);
-  border: 1px solid rgba(0,212,255,0.18);
-  border-radius: 4px;
-  padding: 2px 8px;
-}
+/* ── Dashboard shell ───────────────────────────── */
+.rdr-dash{background:var(--cs-bg);padding:16px 24px 56px;}
+.rdr-container{max-width:1440px;margin:0 auto;}
+/* Top row: 25% stacked left | 45% map | 30% feed */
+.rdr-top-grid{display:grid;grid-template-columns:25fr 45fr 30fr;gap:12px;margin-bottom:12px;align-items:stretch;}
+.rdr-col-a{display:flex;flex-direction:column;gap:12px;}
+/* Row 3: heatmap | kev | industries — equal thirds */
+.rdr-row3-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;}
+/* Row 4: full-width historical */
+.rdr-hist-row{margin-bottom:0;}
 
-/* ── Empty state / Add-row hint ── */
-.radar-hint {
-  text-align: center;
-  padding: 48px 24px;
-  color: rgba(255,255,255,0.22);
-  font-size: 13px;
-  display: none; /* show when table is empty */
+/* ── Panels ────────────────────────────────────── */
+.rdr-panel{
+  background:var(--cs-panel);
+  border:1px solid var(--cs-border);
+  clip-path:polygon(10px 0%,100% 0%,100% calc(100% - 10px),calc(100% - 10px) 100%,0% 100%,0% 10px);
+  overflow:hidden;
+  filter:drop-shadow(0 0 8px rgba(0,212,255,0.06));
+  transition:filter .2s,border-color .2s;
 }
+.rdr-panel:hover{border-color:var(--cs-border-glow);filter:drop-shadow(0 0 12px rgba(0,212,255,0.12));}
+.rdr-panel-flex{display:flex;flex-direction:column;}
+.rdr-panel-hdr{padding:11px 16px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:10px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--cs-dim);display:flex;align-items:center;gap:8px;flex-shrink:0;cursor:pointer;user-select:none;font-family:var(--cs-mono);}
+.rdr-panel-hdr:hover{color:rgba(255,255,255,0.55);}
+.rdr-expand-btn{margin-left:auto;font-size:14px;color:var(--cs-dimmer);opacity:0.6;transition:opacity .2s;cursor:pointer;}
+.rdr-panel-hdr:hover .rdr-expand-btn{opacity:1;}
+.rdr-archive-link{display:block;padding:7px 16px;text-align:right;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#334155;text-decoration:none;border-top:1px solid rgba(255,255,255,.04);font-family:var(--cs-mono);transition:color .15s;}
+.rdr-archive-link:hover{color:#67e8f9;}
 
-/* ── Section label above table ── */
-.radar-section-label {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--cs-cyan);
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.radar-section-label::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: rgba(0,212,255,0.12);
-}
+/* ── Radar Centerpiece ─────────────────────────── */
+.radar-center-panel{display:flex;flex-direction:column;}
+.radar-title-row{padding:12px 20px 0;display:flex;justify-content:space-between;align-items:flex-start;}
+.radar-title{font-size:18px;font-weight:800;color:var(--cs-cyan);letter-spacing:2px;text-transform:uppercase;text-shadow:0 0 20px rgba(0,212,255,0.4);font-family:var(--cs-mono);}
+.radar-update{text-align:right;}
+.radar-update-label{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--cs-dim);font-family:var(--cs-mono);}
+.radar-update-val{font-size:14px;font-weight:700;color:var(--cs-text);font-family:var(--cs-mono);}
+/* wrap holds circle + vertical legend side-by-side */
+.radar-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:10px;gap:10px;}
+.radar-circle-outer{position:relative;width:100%;max-width:430px;aspect-ratio:1;}
+.radar-circle-container{position:relative;border-radius:50%;overflow:hidden;width:100%;height:100%;box-shadow:0 0 40px rgba(0,212,255,0.1),inset 0 0 40px rgba(0,0,0,0.4);}
+.radar-circle-container canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+#chart-map{z-index:1;}
+#radar-canvas{z-index:2;pointer-events:none;}
+/* framing crosshairs at 4 corners of outer wrapper */
+.radar-circle-outer::before,.radar-circle-outer::after{content:'';position:absolute;width:12px;height:12px;z-index:10;pointer-events:none;}
+.radar-circle-outer::before{top:-4px;left:-4px;border-top:2px solid rgba(0,212,255,0.6);border-left:2px solid rgba(0,212,255,0.6);}
+.radar-circle-outer::after{bottom:-4px;right:-4px;border-bottom:2px solid rgba(0,212,255,0.6);border-right:2px solid rgba(0,212,255,0.6);}
+.radar-corner-tr,.radar-corner-bl{content:'';position:absolute;width:12px;height:12px;z-index:10;pointer-events:none;}
+.radar-corner-tr{top:-4px;right:-4px;border-top:2px solid rgba(0,212,255,0.6);border-right:2px solid rgba(0,212,255,0.6);}
+.radar-corner-bl{bottom:-4px;left:-4px;border-bottom:2px solid rgba(0,212,255,0.6);border-left:2px solid rgba(0,212,255,0.6);}
+/* vertical density legend */
+.radar-density-legend{display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;}
+.radar-density-label{font-size:7px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(0,212,255,0.5);font-family:var(--cs-mono);writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);max-height:80px;}
+.radar-density-bar{width:8px;flex:1;min-height:120px;border-radius:4px;background:linear-gradient(to bottom,#00e5ff,rgba(0,140,180,0.6),#0b192c);box-shadow:0 0 8px rgba(0,229,255,0.2);}
+.radar-density-label-min{font-size:7px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:rgba(0,212,255,0.3);font-family:var(--cs-mono);writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);max-height:80px;}
 
-@media(max-width: 768px) {
-  .sev-bar-inner { grid-template-columns: repeat(2,1fr); }
-  .radar-header-inner { flex-direction: column; align-items: flex-start; }
-  .radar-updated { text-align: left; }
-  .radar-table thead { display: none; }
-  .radar-table, .radar-table tbody, .radar-table tr, .radar-table td { display: block; width: 100%; }
-  .radar-table tr { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); }
-  .radar-table td { padding: 2px 0; border: none; }
+/* ── Top 10 Panel ──────────────────────────────── */
+.top10-body{padding:12px 14px;overflow-y:auto;flex:1;}
+.top10-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);}
+.top10-rank{font-size:10px;font-weight:800;color:var(--cs-dimmer);width:16px;flex-shrink:0;text-align:right;font-family:var(--cs-mono);}
+.top10-name{font-size:11px;color:var(--cs-text);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.top10-bar-wrap{width:90px;flex-shrink:0;}
+.top10-bar-track{height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;}
+.top10-bar-fill{height:100%;border-radius:3px;background:linear-gradient(to right,rgba(0,212,255,0.5),var(--cs-cyan));transition:width .5s ease;}
+.top10-count{font-size:10px;font-family:monospace;color:var(--cs-cyan);width:24px;text-align:right;flex-shrink:0;}
+.top10-empty{font-size:12px;color:var(--cs-dimmer);text-align:center;padding:30px 0;}
+
+/* ── Live Feed ─────────────────────────────────── */
+.rdr-feed-filters{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);display:flex;gap:8px;flex-shrink:0;}
+.rdr-select{background:#04080f;border:1px solid rgba(255,255,255,0.10);border-radius:7px;color:rgba(255,255,255,0.65);padding:6px 9px;font-size:11px;outline:none;}
+.rdr-select:focus{border-color:var(--cs-border-glow);}
+.rdr-search{background:#04080f;border:1px solid rgba(255,255,255,0.10);border-radius:7px;color:rgba(255,255,255,0.65);padding:6px 9px;font-size:11px;flex:1;outline:none;}
+.rdr-search:focus{border-color:var(--cs-border-glow);}
+.rdr-search::placeholder{color:var(--cs-dimmer);}
+.rdr-feed-scroll{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(0,212,255,0.35) rgba(255,255,255,0.04);}
+.rdr-feed-scroll::-webkit-scrollbar{width:5px;}
+.rdr-feed-scroll::-webkit-scrollbar-track{background:rgba(255,255,255,0.03);border-radius:3px;}
+.rdr-feed-scroll::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.35);border-radius:3px;}
+.rdr-feed-scroll::-webkit-scrollbar-thumb:hover{background:rgba(0,212,255,0.55);}
+.rdr-tbl{width:100%;border-collapse:collapse;}
+.rdr-tbl th{padding:8px 10px;font-size:9px;letter-spacing:.8px;font-weight:700;text-transform:uppercase;color:var(--cs-dimmer);border-bottom:1px solid rgba(255,255,255,0.05);text-align:left;position:sticky;top:0;background:var(--cs-panel);z-index:1;}
+.rdr-tbl td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);vertical-align:middle;}
+.rdr-tbl tr:hover td{background:rgba(0,212,255,0.03);}
+.rdr-cell-name{font-weight:600;color:var(--cs-text);font-size:11px;max-width:110px;}
+.rdr-cell-cve{font-size:9px;color:var(--cs-dimmer);font-family:var(--cs-mono);margin-top:1px;}
+.rdr-cell-cvss{color:rgba(255,255,255,0.55);font-size:11px;font-family:var(--cs-mono);}
+.rdr-link{font-size:10px;color:var(--cs-cyan);font-weight:600;text-decoration:none;white-space:nowrap;}
+.rdr-link:hover{text-decoration:underline;}
+.rdr-pending{font-size:10px;color:var(--cs-dimmer);}
+.rdr-empty{text-align:center;padding:30px 10px;color:var(--cs-dimmer);font-size:12px;}
+.rdr-meta{padding:7px 12px;font-size:10px;color:var(--cs-dimmer);border-top:1px solid rgba(255,255,255,0.04);flex-shrink:0;}
+
+/* ── Vuln Distribution ─────────────────────────── */
+.vuln-chart-wrap{padding:12px 14px 8px;flex:1;min-height:180px;position:relative;}
+
+/* ── CISA KEV ──────────────────────────────────── */
+.kev-search-wrap{padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;}
+.kev-search{background:#04080f;border:1px solid rgba(255,255,255,0.10);border-radius:7px;color:rgba(255,255,255,0.65);padding:6px 10px;font-size:11px;width:100%;outline:none;box-sizing:border-box;}
+.kev-search:focus{border-color:var(--cs-border-glow);}
+.kev-search::placeholder{color:var(--cs-dimmer);}
+.kev-subtitle{padding:6px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:rgba(255,100,100,0.7);}
+.rdr-kev-scroll{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(0,212,255,0.12) transparent;}
+.rdr-kev-scroll::-webkit-scrollbar{width:3px;}
+.rdr-kev-scroll::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.18);border-radius:2px;}
+.kev-entry{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;transition:background .15s;}
+.kev-entry:hover{background:rgba(0,212,255,0.04);}
+.kev-row-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:2px;}
+.kev-cve{font-family:var(--cs-mono);font-size:11px;color:var(--cs-cyan);font-weight:700;}
+.kev-vendor{font-size:10px;color:rgba(255,255,255,0.55);margin-top:1px;}
+.kev-badge{display:inline-flex;align-items:center;background:rgba(255,59,59,0.12);border:1px solid rgba(255,59,59,0.35);color:#ff6b6b;font-size:8px;font-weight:800;padding:2px 6px;border-radius:20px;letter-spacing:.8px;white-space:nowrap;flex-shrink:0;}
+.kev-row-bot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px;}
+.kev-attack{font-size:10px;color:var(--cs-dimmer);}
+.kev-dates{font-size:9px;color:rgba(255,255,255,0.2);}
+.kev-no-results{text-align:center;padding:24px;font-size:11px;color:var(--cs-dimmer);}
+.kev-meta-bar{padding:6px 14px;font-size:9px;color:var(--cs-dimmer);border-top:1px solid rgba(255,255,255,0.04);display:flex;justify-content:space-between;flex-shrink:0;}
+.kev-live-dot{display:inline-block;width:5px;height:5px;border-radius:50%;background:#00ffa3;margin-right:4px;animation:pulse 2s infinite;}
+
+/* ── Historical DB ─────────────────────────────── */
+.hist-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;}
+.hist-tab{padding:8px 12px;font-size:9px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--cs-dimmer);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap;}
+.hist-tab:hover{color:rgba(255,255,255,0.5);}
+.hist-tab.active{color:var(--cs-cyan);border-bottom-color:var(--cs-cyan);}
+.hist-chart-wrap{padding:10px 12px 6px;position:relative;height:160px;}
+.hist-table-wrap{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:rgba(0,212,255,0.12) transparent;}
+.hist-table-wrap::-webkit-scrollbar{width:3px;}
+.hist-table-wrap::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.18);border-radius:2px;}
+.hist-tbl{width:100%;border-collapse:collapse;font-size:10px;}
+.hist-tbl th{padding:6px 10px;text-align:left;color:var(--cs-dimmer);font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.05);position:sticky;top:0;background:var(--cs-panel);z-index:1;font-family:var(--cs-mono);}
+.hist-tbl td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,0.03);color:rgba(255,255,255,0.7);}
+.hist-tbl tr:hover td{background:rgba(0,212,255,0.03);}
+.hist-tbl td:last-child{color:var(--cs-cyan);font-weight:700;font-family:var(--cs-mono);}
+
+/* ── Freemium gate ─────────────────────────────── */
+.gate-wrapper{position:relative;}
+.blurred{filter:blur(4px);pointer-events:none;opacity:.5;}
+.gate-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,15,30,0.7);}
+.gate-card{background:var(--cs-panel2);border:1px solid var(--cs-border-glow);border-radius:14px;padding:24px 28px;text-align:center;max-width:240px;}
+.gate-card h3{font-size:14px;font-weight:700;color:#fff;margin:0 0 8px;}
+.gate-card p{font-size:12px;color:var(--cs-dim);margin:0 0 16px;line-height:1.55;}
+
+/* ── Expand Overlay ────────────────────────────── */
+.expand-overlay{display:none;position:fixed;inset:0;background:rgba(2,5,12,0.96);z-index:9999;padding:32px;overflow:auto;backdrop-filter:blur(4px);}
+.expand-overlay.open{display:flex;flex-direction:column;}
+.expand-modal{background:var(--cs-panel);border:1px solid var(--cs-border-glow);border-radius:18px;flex:1;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 0 60px rgba(0,212,255,0.08);}
+.expand-modal-hdr{padding:14px 20px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.expand-modal-title{font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:var(--cs-dim);flex:1;}
+.expand-close{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.6);width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;}
+.expand-close:hover{background:rgba(255,59,59,0.2);color:#fff;}
+.expand-body{flex:1;overflow:auto;padding:20px;}
+
+/* ── Heatmap Matrix ────────────────────────────── */
+.heatmap-body{padding:10px 12px;overflow:auto;flex:1;}
+.heatmap-tbl{width:100%;border-collapse:collapse;font-family:var(--cs-mono);}
+.heatmap-tbl th{padding:6px 8px;font-size:9px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--cs-dimmer);text-align:center;border-bottom:1px solid rgba(255,255,255,0.05);}
+.heatmap-tbl th:first-child{text-align:left;}
+.heatmap-tbl td{padding:7px 8px;font-size:9px;text-align:center;border:1px solid rgba(255,255,255,0.04);}
+.heatmap-tbl td:first-child{text-align:left;color:rgba(255,255,255,0.6);white-space:nowrap;font-size:9px;padding-right:12px;}
+.hm-cell{display:inline-block;padding:3px 8px;border-radius:3px;font-weight:700;font-size:9px;min-width:28px;}
+
+/* ── Industries Donut ──────────────────────────── */
+.industries-body{padding:10px 14px;flex:1;display:flex;align-items:center;justify-content:center;}
+.industries-wrap{position:relative;width:100%;max-width:240px;aspect-ratio:1;}
+
+/* ── Responsive ────────────────────────────────── */
+@media(max-width:1200px){
+  .rdr-top-grid{grid-template-columns:22fr 45fr 33fr;}
+  .rdr-row3-grid{grid-template-columns:1fr 1fr 1fr;}
 }
+@media(max-width:960px){
+  .rdr-top-grid{grid-template-columns:1fr 1fr;}
+  .rdr-col-a{grid-column:1/-1;flex-direction:row;}
+  .radar-center-panel{grid-column:1/-1;}
+  .rdr-row3-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:640px){
+  .rdr-top-grid,.rdr-row3-grid{grid-template-columns:1fr;}
+  .rdr-col-a{flex-direction:column;}
+  .rdr-stats-grid{grid-template-columns:repeat(2,1fr);}
+  .rdr-stat-total{grid-column:1/-1;}
+}
+/* ── Embed mode (iframe from index.html) ───── */
+.embed .nav,.embed .nav-drawer,.embed #expand-overlay{display:none!important;}
+.embed body,.embed{overflow-x:hidden;}
+.embed .rdr-stats{padding:10px 16px;}
+.embed .rdr-dash{padding:12px 16px 20px;}
+
+/* ── T1: Mobile Card Stack ─────────────────── */
+.radar-mobile-view{display:none;flex-direction:column;position:relative;overflow:hidden;flex:1;}
+.radar-card{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.05);}
+.card-top-row{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap;}
+.card-threat-name{font-size:12px;font-weight:700;color:rgba(255,255,255,0.85);line-height:1.35;margin-bottom:4px;}
+.card-meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.card-cve{font-size:10px;color:var(--cs-dimmer);font-family:var(--cs-mono);}
+.card-cvss{font-size:10px;font-family:var(--cs-mono);color:rgba(255,255,255,0.4);}
+.row-blurred{filter:blur(5px);opacity:0.25;user-select:none;pointer-events:none;}
+.conversion-curtain{position:absolute;bottom:0;left:0;right:0;height:68%;background:linear-gradient(to top,#0f172a 80%,rgba(15,23,42,0.1) 100%);display:flex;align-items:flex-end;justify-content:center;padding-bottom:22px;pointer-events:auto;}
+.curtain-cta{text-align:center;padding:0 16px;}
+.curtain-cta h4{font-size:13px;font-weight:700;color:#fff;margin:0 0 6px;text-shadow:0 0 10px rgba(0,212,255,0.35);}
+.curtain-cta p{font-size:11px;color:rgba(255,255,255,0.45);margin:0 0 14px;line-height:1.5;}
+@media(max-width:768px){
+  .rdr-feed-scroll{display:none!important;}
+  .radar-mobile-view{display:flex;}
+  #radar-gate{display:none!important;}
+}
+@media(min-width:769px){.radar-mobile-view{display:none!important;}}
+
+/* ── T2: Asset Tag Pills ───────────────────── */
+.asset-tag-pills{display:inline-flex;gap:4px;flex-wrap:wrap;margin-top:3px;}
+.asset-tag-pill{display:inline-flex;align-items:center;padding:2px 6px;border-radius:10px;font-size:9px;font-weight:700;letter-spacing:.05em;border:1px solid;white-space:nowrap;font-family:var(--cs-mono);}
+.tag-ai{background:rgba(124,111,255,0.12);color:#a78bfa;border-color:rgba(124,111,255,0.3);}
+.tag-cloud{background:rgba(0,212,255,0.09);color:#67e8f9;border-color:rgba(0,212,255,0.24);}
+
+/* ── T3: Heatmap Tooltip ───────────────────── */
+.hm-tooltip{position:fixed;z-index:9000;background:#07111f;border:1px solid rgba(0,212,255,0.35);border-radius:8px;padding:13px 16px;max-width:290px;box-shadow:0 0 20px rgba(0,212,255,0.12);pointer-events:none;}
+.hm-tooltip-coords{font-size:9px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--cs-cyan);font-family:var(--cs-mono);margin-bottom:8px;}
+.hm-tooltip-brief{font-size:12px;color:rgba(255,255,255,0.72);line-height:1.6;}
+.hm-cell{cursor:pointer;transition:transform .1s,box-shadow .12s;}
+.hm-cell:hover{transform:scale(1.14);box-shadow:0 0 8px rgba(0,212,255,0.3);}
+
+/* ── T4: Historical Mode Toggle ────────────── */
+.hist-mode-toggle{display:flex;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;gap:0;}
+.hist-mode-btn{padding:5px 14px;font-size:9px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;color:var(--cs-dimmer);cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:transparent;transition:all .15s;font-family:var(--cs-mono);}
+.hist-mode-btn:first-child{border-radius:4px 0 0 4px;}
+.hist-mode-btn:last-child{border-radius:0 4px 4px 0;border-left:none;}
+.hist-mode-btn.active{background:rgba(0,212,255,0.11);border-color:rgba(0,212,255,0.42);color:var(--cs-cyan);}
+.hist-mode-btn:hover:not(.active){color:rgba(255,255,255,0.5);border-color:rgba(255,255,255,0.18);}
 </style>
 </head>
 <body>
+<script>if(location.search.includes('embed=1'))document.body.classList.add('embed');</script>
 
-<!-- ── Navigation ── -->
-<nav class="nav" role="navigation" aria-label="Main navigation">
+<nav class="nav" role="navigation">
   <a href="index.html" class="nav-wordmark">CyberSense<span>.Solutions</span></a>
   <ul class="nav-links">
     <li><a href="index.html">Home</a></li>
@@ -253,122 +296,266 @@ body { background: #04080f; color: rgba(255,255,255,0.82); }
     <li><a href="newsletter.html">Newsletter</a></li>
     <li><a href="resources.html">Resources</a></li>
   </ul>
-  <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
-    <span></span><span></span><span></span>
-  </button>
+  <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
 </nav>
 <div class="nav-drawer" id="nav-drawer">
   <ul>
     <li><a href="index.html">Home</a></li>
     <li><a href="about.html">About</a></li>
     <li><a href="radar.html">Radar</a></li>
-    <li><a href="intel.html">Intel</a></li>
+    <li><a href="intelligence.html">Intel</a></li>
     <li><a href="newsletter.html">Newsletter</a></li>
     <li><a href="resources.html">Resources</a></li>
   </ul>
+  <a href="#" class="drawer-login" onclick="CS.Auth.showLoginModal();return false;">Login</a>
 </div>
 
-<!-- ── Page Header ── -->
-<div class="radar-header">
-  <div class="radar-header-inner">
-    <div>
-      <div class="radar-live-pill"><span class="radar-live-dot"></span>Active Tracking</div>
-      <h1 class="radar-title">Threat Radar</h1>
-      <p class="radar-subtitle">Active CVEs, adversary campaigns, and vulnerability tracking — organized by severity.</p>
+<!-- ═══ HERO ═══ -->
+<section class="hero-dark section" style="padding:52px 24px 44px;">
+  <div class="container" style="position:relative;z-index:1;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+      <p class="section-label" style="margin:0;">Live Intelligence</p>
+      <span class="live-dot"></span>
     </div>
-    <div class="radar-updated">
-      Last updated: <!-- EDIT: Update this date manually --><br>
-      <strong style="color:rgba(255,255,255,0.5);">July 4, 2026</strong>
+    <h1 class="section-heading section-heading-light" style="font-size:clamp(28px,4.5vw,44px);">Threat Radar</h1>
+    <p class="section-sub section-sub-light">Global compromise telemetry — active vulnerabilities, tracked CVEs, and adversary campaigns updated in real time.</p>
+  </div>
+</section>
+
+<!-- ═══ STATS BAR ═══ -->
+<div class="rdr-stats">
+  <div class="rdr-stats-grid">
+    <div class="rdr-stat rdr-stat-total">
+      <div>
+        <div class="rdr-stat-label">Tracked Threats</div>
+        <div class="rdr-stat-val" id="stat-total">—</div>
+      </div>
+    </div>
+    <div class="rdr-stat rdr-stat-crit">
+      <div>
+        <div class="rdr-stat-label">Critical</div>
+        <div class="rdr-stat-val" id="stat-crit">—</div>
+      </div>
+    </div>
+    <div class="rdr-stat rdr-stat-high">
+      <div>
+        <div class="rdr-stat-label">High</div>
+        <div class="rdr-stat-val" id="stat-high">—</div>
+      </div>
+    </div>
+    <div class="rdr-stat rdr-stat-med">
+      <div>
+        <div class="rdr-stat-label">Medium</div>
+        <div class="rdr-stat-val" id="stat-med">—</div>
+      </div>
+    </div>
+    <div class="rdr-stat rdr-stat-low">
+      <div>
+        <div class="rdr-stat-label">Low</div>
+        <div class="rdr-stat-val" id="stat-low">—</div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ── Severity Summary Tiles ── -->
-<!-- EDIT: Update counts manually as you add/remove rows -->
-<div class="sev-bar">
-  <div class="sev-bar-inner">
-    <div class="sev-tile sev-tile-critical">
-      <div>
-        <div class="sev-tile-count" id="count-critical">0</div>
-        <div class="sev-tile-label">Critical</div>
+<!-- ═══ DASHBOARD ═══ -->
+<div class="rdr-dash">
+  <div class="rdr-container">
+
+    <!-- ── ROW 1: VulnDist+Top10 | Radar Map | Live Feed ── -->
+    <div class="rdr-top-grid">
+
+      <!-- Col A: stacked — Vulnerability Distribution (top) + Top 10 (bottom) -->
+      <div class="rdr-col-a">
+        <div class="rdr-panel rdr-panel-flex" style="flex:0 0 210px;">
+          <div class="rdr-panel-hdr" onclick="expandPanel('vulndist')">
+            <span>Vulnerability Distribution</span>
+            <span style="margin-left:4px;font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--cs-dimmer);">2026 YTD</span>
+            <span class="rdr-expand-btn" title="Expand">⤢</span>
+          </div>
+          <div class="vuln-chart-wrap">
+            <canvas id="chart-vulndist"></canvas>
+          </div>
+        </div>
+        <div class="rdr-panel rdr-panel-flex" style="flex:1;min-height:280px;">
+          <div class="rdr-panel-hdr" onclick="expandPanel('top10')">
+            <span>Top 10 Attack Vectors — 2026 YTD</span>
+            <span class="rdr-expand-btn" title="Expand">⤢</span>
+          </div>
+          <div class="top10-body" id="top10-body">
+            <div class="top10-empty">Loading…</div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="sev-tile sev-tile-high">
-      <div>
-        <div class="sev-tile-count" id="count-high">0</div>
-        <div class="sev-tile-label">High</div>
+
+      <!-- Col B: Live Threat Radar -->
+      <div class="rdr-panel radar-center-panel" style="min-height:520px;">
+        <div class="radar-title-row">
+          <div class="radar-title">Live Threat Radar</div>
+          <div class="radar-update">
+            <div class="radar-update-label">Last Update</div>
+            <div class="radar-update-val" id="stat-updated">—</div>
+          </div>
+        </div>
+        <div class="radar-wrap">
+          <div class="radar-circle-outer">
+            <div class="radar-circle-container" id="radar-circle">
+              <canvas id="chart-map"></canvas>
+              <canvas id="radar-canvas"></canvas>
+            </div>
+            <span class="radar-corner-tr"></span>
+            <span class="radar-corner-bl"></span>
+          </div>
+          <!-- Vertical density scale legend -->
+          <div class="radar-density-legend">
+            <span class="radar-density-label">MAX COMPROMISE VECTORS</span>
+            <div class="radar-density-bar"></div>
+            <span class="radar-density-label-min">MINIMAL INTEL TELEMETRY</span>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="sev-tile sev-tile-medium">
-      <div>
-        <div class="sev-tile-count" id="count-medium">0</div>
-        <div class="sev-tile-label">Medium</div>
+
+      <!-- Col C: Live Radar Feed -->
+      <div class="rdr-panel rdr-panel-flex" style="height:520px;">
+        <div class="rdr-panel-hdr" onclick="expandPanel('feed')">
+          <span class="live-dot" style="flex-shrink:0;"></span>
+          <span>Live Radar Feed</span>
+          <span class="rdr-expand-btn" title="Expand">⤢</span>
+        </div>
+        <div class="rdr-feed-filters">
+          <select class="rdr-select" id="severity-filter" aria-label="Filter by severity">
+            <option value="">All</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+          <input class="rdr-search" type="text" id="threat-search" placeholder="Search threats, CVEs…" aria-label="Search threats">
+        </div>
+        <div class="rdr-feed-scroll" id="radar-wrap">
+          <table class="rdr-tbl" aria-label="Threat radar">
+            <thead><tr><th>Sev</th><th>Threat</th><th>CVSS</th><th>Intel</th></tr></thead>
+            <tbody id="radar-body">
+              <tr><td colspan="4" class="rdr-empty">Loading threat data…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="gate-wrapper" id="radar-gate" style="display:none;">
+          <div class="blurred" aria-hidden="true" id="blurred-rows-wrap">
+            <table class="rdr-tbl"><tbody id="blurred-rows"></tbody></table>
+          </div>
+          <div class="gate-overlay">
+            <div class="gate-card">
+              <h3>Subscribe to unlock full radar</h3>
+              <p>All tracked threats plus real-time alerts when new critical CVEs are published. Free to start.</p>
+              <a href="newsletter.html#subscribe" class="btn btn-primary">Subscribe Free</a>
+            </div>
+          </div>
+        </div>
+        <div id="radar-mobile-view" class="radar-mobile-view" aria-label="Threat radar mobile view"></div>
+        <div class="rdr-meta" id="radar-meta"></div>
+        <a href="threat.html" class="rdr-archive-link">Browse Threat Archive &rarr;</a>
       </div>
-    </div>
-    <div class="sev-tile sev-tile-low">
-      <div>
-        <div class="sev-tile-count" id="count-low">0</div>
-        <div class="sev-tile-label">Low</div>
+
+    </div><!-- /rdr-top-grid -->
+
+    <!-- ── ROW 3: Heatmap Matrix | CISA KEV | Industries Targeted ── -->
+    <div class="rdr-row3-grid">
+
+      <!-- Heatmap Matrix -->
+      <div class="rdr-panel rdr-panel-flex" style="height:340px;">
+        <div class="rdr-panel-hdr" onclick="expandPanel('heatmap')">
+          <span>Vulnerability Heatmap Matrix</span>
+          <span style="margin-left:4px;font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--cs-dimmer);">CWE × System Tier</span>
+          <span class="rdr-expand-btn" title="Expand">⤢</span>
+        </div>
+        <div class="heatmap-body" id="heatmap-body"></div>
       </div>
+
+      <!-- CISA KEV -->
+      <div class="rdr-panel rdr-panel-flex" style="height:340px;">
+        <div class="rdr-panel-hdr" onclick="expandPanel('kev')">
+          <span style="color:rgba(255,100,100,0.8);">●</span>
+          <span>CISA KEV — Known Exploited Vulnerabilities</span>
+          <span id="kev-count" style="margin-left:6px;font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--cs-dimmer);"></span>
+          <span class="rdr-expand-btn" title="Expand">⤢</span>
+        </div>
+        <div class="kev-search-wrap">
+          <input class="kev-search" type="text" id="kev-search" placeholder="Search CVE, vendor, product, attack type…" oninput="filterKEV(this.value)" aria-label="Search CISA KEV">
+        </div>
+        <div class="kev-subtitle" id="kev-subtitle">CONFIRMED, WEAPONIZED VULNERABILITIES</div>
+        <div class="rdr-kev-scroll" id="kev-list"></div>
+        <div class="kev-meta-bar" id="kev-meta-bar" style="display:none;">
+          <span id="kev-meta-left"></span>
+          <span id="kev-meta-right"></span>
+        </div>
+      </div>
+
+      <!-- Industries Targeted -->
+      <div class="rdr-panel rdr-panel-flex" style="height:340px;">
+        <div class="rdr-panel-hdr" onclick="expandPanel('industries')">
+          <span>Industries Targeted</span>
+          <span style="margin-left:4px;font-size:9px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--cs-dimmer);">2026 YTD</span>
+          <span class="rdr-expand-btn" title="Expand">⤢</span>
+        </div>
+        <div class="industries-body">
+          <div class="industries-wrap">
+            <canvas id="chart-industries"></canvas>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /rdr-row3-grid -->
+
+    <!-- ── ROW 4: 10-Year Historical (full width) ── -->
+    <div class="rdr-hist-row">
+      <div class="rdr-panel rdr-panel-flex" style="height:420px;">
+        <div class="rdr-panel-hdr" onclick="expandPanel('historical')">
+          <span>10-Year Historical Database</span>
+          <span class="rdr-expand-btn" title="Expand">⤢</span>
+        </div>
+        <div class="hist-mode-toggle">
+          <button class="hist-mode-btn active" onclick="switchHistMode('volume',this)">View Volume</button>
+          <button class="hist-mode-btn" onclick="switchHistMode('vector',this)">View Vector</button>
+        </div>
+        <div class="hist-tabs" id="hist-tabs">
+          <div class="hist-tab active" onclick="switchHistTab('industry',this)">By Industry</div>
+          <div class="hist-tab" onclick="switchHistTab('type',this)">By Attack Type</div>
+          <div class="hist-tab" onclick="switchHistTab('country',this)">By Country</div>
+          <div class="hist-tab" onclick="switchHistTab('financial',this)">Total Financial Loss</div>
+        </div>
+        <div class="hist-chart-wrap" style="height:200px;">
+          <canvas id="chart-hist"></canvas>
+        </div>
+        <div class="hist-table-wrap">
+          <table class="hist-tbl">
+            <thead id="hist-thead"></thead>
+            <tbody id="hist-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /rdr-hist-row -->
+
+  </div><!-- /rdr-container -->
+</div><!-- /rdr-dash -->
+
+<!-- ═══ EXPAND OVERLAY ═══ -->
+<div class="expand-overlay" id="expand-overlay">
+  <div class="expand-modal">
+    <div class="expand-modal-hdr">
+      <span class="expand-modal-title" id="expand-modal-title">—</span>
+      <button class="expand-close" onclick="closeExpand()" aria-label="Close">✕</button>
     </div>
+    <div class="expand-body" id="expand-body"></div>
   </div>
 </div>
 
-<!-- ── Threat Table ── -->
-<div class="radar-body">
-  <p class="radar-section-label">Current Threat Ledger</p>
-
-  <div class="radar-table-wrap">
-    <table class="radar-table" id="threat-table">
-      <thead>
-        <tr>
-          <th>Threat / CVE</th>
-          <th>Severity</th>
-          <th>CVSS</th>
-          <th>Category</th>
-          <th>Source</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody id="threat-tbody">
-        <!-- ─────────────────────────────────────────────────────────────
-             HOW TO ADD A THREAT ROW:
-             Copy the block below, paste inside this <tbody>, and fill in:
-             - data-sev: "critical" | "high" | "medium" | "low"
-             - Threat name, description, CVSS, category, source, date
-        ──────────────────────────────────────────────────────────────── -->
-
-        <!-- EXAMPLE ROW — delete this and add your real entries -->
-        <tr data-sev="critical">
-          <td>
-            <div class="threat-name">CVE-XXXX-XXXXX — Example Threat</div>
-            <div class="threat-desc">Brief description of the vulnerability or campaign goes here.</div>
-          </td>
-          <td><span class="sev-badge sev-critical">Critical</span></td>
-          <td><span class="cvss-val">9.8</span></td>
-          <td><span class="radar-category-tag">Supply Chain</span></td>
-          <td class="radar-source">CISA KEV</td>
-          <td class="radar-source">Jul 4, 2026</td>
-        </tr>
-
-        <!-- ADD MORE ROWS HERE -->
-
-      </tbody>
-    </table>
-  </div>
-
-  <p style="margin-top:20px;font-size:12px;color:rgba(255,255,255,0.22);font-family:'JetBrains Mono',monospace;">
-    Sources: CISA KEV · NVD · MITRE ATT&CK · Vendor Security Advisories
-  </p>
-</div>
-
-<!-- ── Footer ── -->
 <footer>
   <div class="footer-inner">
     <div class="footer-grid">
       <div>
         <div class="footer-logo">CyberSense<span>.Solutions</span></div>
-        <p class="footer-mission">Delivering clear, practical, and timely cybersecurity intelligence — building awareness, resilience, and a culture that takes care of itself.</p>
+        <p class="footer-mission">Delivering actionable cybersecurity intelligence, daily awareness briefings, and professional training to teams that can't afford to be caught off guard.</p>
         <div class="footer-socials">
           <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" class="footer-social-icon">in</a>
           <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" class="footer-social-icon">f</a>
@@ -377,59 +564,1238 @@ body { background: #04080f; color: rgba(255,255,255,0.82); }
           <a href="https://www.threads.com/@cybersense.solutions" target="_blank" class="footer-social-icon">tt</a>
         </div>
       </div>
-      <div class="footer-col">
-        <h4>Platform</h4>
+      <div class="footer-col"><h4>Platform</h4>
         <ul>
           <li><a href="index.html">Home</a></li>
           <li><a href="about.html">About</a></li>
           <li><a href="radar.html">Threat Radar</a></li>
-          <li><a href="intel.html">Intel Briefs</a></li>
+          <li><a href="intelligence.html">Intel Briefs</a></li>
           <li><a href="newsletter.html">Newsletter</a></li>
           <li><a href="resources.html">Resources</a></li>
         </ul>
       </div>
-      <div class="footer-col">
-        <h4>Legal</h4>
-        <ul>
-          <li><a href="#">Privacy Policy</a></li>
-          <li><a href="#">Terms of Service</a></li>
-          <li><a href="about.html#contact">Contact Us</a></li>
-          <li><a href="#">Cookie Policy</a></li>
-        </ul>
-      </div>
+      <div class="footer-col"><h4>Legal</h4><ul><li><a href="#">Privacy Policy</a></li><li><a href="#">Terms of Service</a></li><li><a href="about.html">Contact Us</a></li></ul></div>
     </div>
-    <div class="footer-bottom">
-      <span>&copy; 2026 CyberSense.Solutions. All rights reserved.</span>
-      <span>Security awareness starts here.</span>
-    </div>
+    <div class="footer-bottom"><span>&copy; 2026 CyberSense.Solutions. All rights reserved.</span><span>Security awareness starts here.</span></div>
   </div>
 </footer>
 
+<script>window.CS_API_BASE = 'https://api.cybersense.solutions';</script>
+<script src="auth.js"></script>
+<script src="main.js"></script>
 <script>
-// Auto-count severity tiles from table rows
-function updateSevCounts() {
-  const rows = document.querySelectorAll('#threat-tbody tr[data-sev]');
-  const counts = { critical: 0, high: 0, medium: 0, low: 0 };
-  rows.forEach(r => {
-    const s = r.dataset.sev;
-    if (counts[s] !== undefined) counts[s]++;
-  });
-  document.getElementById('count-critical').textContent = counts.critical;
-  document.getElementById('count-high').textContent     = counts.high;
-  document.getElementById('count-medium').textContent   = counts.medium;
-  document.getElementById('count-low').textContent      = counts.low;
-}
-updateSevCounts();
+/* ════════════════════════════════════════════════
+   STATIC DATASETS
+════════════════════════════════════════════════ */
 
-// Mobile nav
-const hamburger = document.getElementById('hamburger');
-const drawer    = document.getElementById('nav-drawer');
-if (hamburger && drawer) {
-  hamburger.addEventListener('click', () => {
-    const open = drawer.classList.toggle('open');
-    hamburger.setAttribute('aria-expanded', open);
+// Compromised target density (victims, not attackers)
+const GEO_DATA = {
+  840:{name:'United States',value:342},
+  392:{name:'Japan',value:198},
+  826:{name:'United Kingdom',value:187},
+  276:{name:'Germany',value:165},
+  124:{name:'Canada',value:134},
+  410:{name:'South Korea',value:128},
+  250:{name:'France',value:118},
+  36: {name:'Australia',value:112},
+  356:{name:'India',value:94},
+  528:{name:'Netherlands',value:87},
+  76: {name:'Brazil',value:76},
+  380:{name:'Italy',value:68},
+  724:{name:'Spain',value:58},
+  158:{name:'Taiwan',value:54},
+  702:{name:'Singapore',value:47},
+  756:{name:'Switzerland',value:38},
+  442:{name:'Luxembourg',value:29},
+  616:{name:'Poland',value:26},
+  752:{name:'Sweden',value:22},
+  792:{name:'Turkey',value:18}
+};
+let GEO_MAX = Math.max(...Object.values(GEO_DATA).map(d=>d.value));
+let mapChart = null;
+let geoLive = false;
+
+// ISO alpha-2 → UN M.49 numeric (TopoJSON country ID)
+const A2_TO_NUM = {
+  US:840, CN:156, RU:643, DE:276, GB:826, FR:250, JP:392, IN:356,
+  BR:76,  NL:528, CA:124, KR:410, IT:380, AU:36,  SG:702, UA:804,
+  TR:792, PL:616, SE:752, ES:724, TW:158, HK:344, VN:704, ID:360,
+  IR:364, PK:586, MX:484, AR:32,  ZA:710, RO:642, BG:100, HU:348,
+  CZ:203, FI:246, EE:233, PT:620, BE:56,  CH:756, AT:40,  DK:208,
+  NO:578, MY:458, TH:764, PH:608, NG:566, EG:818, SA:682, IL:376,
+  AE:784, LT:440, LV:428, SK:703, SI:705, RS:688, BY:112, KZ:398,
+  LU:442, HR:191, GR:300, CL:152, CO:170, PE:604, DZ:12,  MA:504,
+  TZ:834, KE:404, GH:288, ET:231, SN:686, CI:384, UG:800, ZM:894
+};
+
+const CISA_KEVS_FALLBACK = [
+  {cve:'CVE-2025-23006',vendor:'SonicWall',product:'SMA 1000 Appliances',attack:'Pre-Authentication Remote Code Execution',added:'Jan 23, 2025',due:'Feb 13, 2025'},
+  {cve:'CVE-2025-21590',vendor:'Juniper Networks',product:'Junos OS',attack:'Improper Isolation / Privilege Escalation',added:'Feb 12, 2025',due:'Mar 5, 2025'},
+  {cve:'CVE-2025-21418',vendor:'Microsoft',product:'Windows (Ancillary Function Driver)',attack:'Privilege Escalation',added:'Feb 5, 2025',due:'Feb 26, 2025'},
+  {cve:'CVE-2025-0282',vendor:'Ivanti',product:'Connect Secure / Policy Secure',attack:'Stack-Based Buffer Overflow',added:'Jan 8, 2025',due:'Jan 22, 2025'},
+  {cve:'CVE-2024-55591',vendor:'Fortinet',product:'FortiOS / FortiProxy',attack:'Authentication Bypass',added:'Jan 14, 2025',due:'Feb 4, 2025'},
+  {cve:'CVE-2025-22457',vendor:'Ivanti',product:'Connect Secure / Policy Secure / ZTA Gateways',attack:'Stack-Based Buffer Overflow — Remote Code Execution',added:'Apr 3, 2025',due:'Apr 11, 2025'},
+  {cve:'CVE-2025-29824',vendor:'Microsoft',product:'Windows Common Log File System (CLFS) Driver',attack:'Privilege Escalation (Zero-Day)',added:'Apr 8, 2025',due:'Apr 29, 2025'},
+  {cve:'CVE-2025-30065',vendor:'Apache',product:'Parquet Java Library',attack:'Remote Code Execution via Deserialization',added:'Apr 10, 2025',due:'May 1, 2025'},
+  {cve:'CVE-2025-31200',vendor:'Apple',product:'iOS / iPadOS / macOS / tvOS',attack:'Remote Code Execution (Memory Corruption)',added:'Apr 16, 2025',due:'May 7, 2025'},
+  {cve:'CVE-2025-24054',vendor:'Microsoft',product:'Windows NTLM',attack:'Hash Disclosure Spoofing',added:'Apr 17, 2025',due:'May 8, 2025'},
+  {cve:'CVE-2025-0994',vendor:'Trimble',product:'Cityworks AMS',attack:'Deserialization — Remote Code Execution',added:'Feb 4, 2025',due:'Feb 25, 2025'},
+  {cve:'CVE-2025-1316',vendor:'Edimax',product:'IC-7100 IP Camera',attack:'OS Command Injection',added:'Mar 6, 2025',due:'Mar 27, 2025'},
+  {cve:'CVE-2024-12084',vendor:'rsync Project',product:'rsync Daemon',attack:'Heap-Based Buffer Overflow',added:'Jan 21, 2025',due:'Feb 11, 2025'},
+  {cve:'CVE-2024-49415',vendor:'Samsung',product:'Mobile Devices (Android)',attack:'Remote Code Execution',added:'Jan 22, 2025',due:'Feb 12, 2025'},
+];
+
+// Vulnerability distribution — 2026 YTD (Jan–May, by severity count per month)
+const VULN_DIST = {
+  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+  critical: [12, 18, 24, 31, 28],
+  high:     [28, 35, 41, 52, 47],
+  medlow:   [15, 22, 29, 38, 34],
+};
+
+// 10-Year Historical Database (2015–2024)
+const HIST = {
+  industry: {
+    labels: ['2015','2016','2017','2018','2019','2020','2021','2022','2023','2024'],
+    datasets: [
+      {label:'Finance',    data:[22,28,34,41,52,68,74,89,98,112], color:'#00d4ff'},
+      {label:'Healthcare', data:[14,18,24,32,41,57,63,74,82,96],  color:'#4da6ff'},
+      {label:'Government', data:[18,21,27,33,42,55,61,70,78,88],  color:'#7c6fff'},
+      {label:'Technology', data:[11,15,19,24,31,44,52,65,76,91],  color:'#00c896'},
+      {label:'Energy',     data:[8, 10,14,18,23,30,36,44,52,63],  color:'#ffd700'},
+    ],
+    tableHead:['Industry','2020','2022','2024','Growth'],
+    tableRows:[
+      ['Finance','68','89','112','+65%'],
+      ['Healthcare','57','74','96','+68%'],
+      ['Government','55','70','88','+60%'],
+      ['Technology','44','65','91','+107%'],
+      ['Energy','30','44','63','+110%'],
+      ['Retail','22','35','51','+132%'],
+    ]
+  },
+  type: {
+    labels: ['Ransomware','Remote Code Execution','Supply Chain','Authentication Bypass','Privilege Escalation','SQL Injection','Phishing / Social Engineering','Zero-Day Exploit','Denial of Service','Command Injection'],
+    data: [847, 1204, 423, 512, 634, 378, 921, 289, 445, 267],
+    tableHead: ['Attack Type','Incidents','Avg CVSS','YoY Growth'],
+    tableRows: [
+      ['Remote Code Execution','1,204','8.9','+12%'],
+      ['Phishing / Social Engineering','921','6.2','+18%'],
+      ['Ransomware','847','8.4','+23%'],
+      ['Privilege Escalation','634','7.8','+31%'],
+      ['Authentication Bypass','512','8.1','+28%'],
+      ['Denial of Service','445','6.5','+9%'],
+      ['Supply Chain Attack','423','9.1','+156%'],
+      ['SQL Injection','378','7.3','+4%'],
+      ['Zero-Day Exploit','289','9.4','+41%'],
+      ['Command Injection','267','8.2','+19%'],
+    ]
+  },
+  country: {
+    labels: ['United States','United Kingdom','Germany','Japan','France','Australia','Canada','India','Brazil','Italy'],
+    data: [4823, 1876, 1542, 1398, 1187, 987, 876, 734, 623, 498],
+    tableHead: ['Country','Incidents (10yr)','2024 Rank','Trend'],
+    tableRows: [
+      ['United States','4,823','#1','↑ +8%'],
+      ['United Kingdom','1,876','#2','↑ +6%'],
+      ['Germany','1,542','#3','↑ +11%'],
+      ['Japan','1,398','#4','↑ +14%'],
+      ['France','1,187','#5','↑ +7%'],
+      ['Australia','987','#6','↑ +9%'],
+      ['Canada','876','#7','↑ +5%'],
+      ['India','734','#8','↑ +22%'],
+      ['Brazil','623','#9','↑ +17%'],
+      ['Italy','498','#10','↑ +13%'],
+    ]
+  },
+  financial: {
+    labels: ['2015','2016','2017','2018','2019','2020','2021','2022','2023','2024'],
+    data: [3.0, 4.5, 6.0, 8.2, 11.4, 16.8, 20.5, 28.7, 34.5, 46.2],
+    tableHead: ['Year','Global Loss ($B)','YoY Change','Notable Driver'],
+    tableRows: [
+      ['2015','$3.0B','—','Retail breach wave'],
+      ['2016','$4.5B','+50%','Ransomware emergence'],
+      ['2017','$6.0B','+33%','WannaCry / NotPetya'],
+      ['2018','$8.2B','+37%','State-sponsored campaigns'],
+      ['2019','$11.4B','+39%','Cloud infrastructure targeting'],
+      ['2020','$16.8B','+47%','Remote work attack surface'],
+      ['2021','$20.5B','+22%','Colonial Pipeline / Kaseya'],
+      ['2022','$28.7B','+40%','Geopolitical cyber operations'],
+      ['2023','$34.5B','+20%','AI-enhanced phishing'],
+      ['2024','$46.2B','+34%','Supply chain & LLM exploits'],
+    ]
+  }
+};
+
+// T4: Threat actor attribution distribution by view dimension
+const HIST_VECTOR = {
+  industry:{
+    labels:['Finance','Healthcare','Government','Technology','Energy','Retail'],
+    datasets:[
+      {label:'Nation-State / Espionage',data:[35,28,55,42,48,18],color:'#7c6fff'},
+      {label:'Ransomware-as-a-Service', data:[42,58,30,38,35,62],color:'#ff3b3b'},
+      {label:'Hacktivism',              data:[23,14,15,20,17,20],color:'#ffd700'},
+    ],
+    tableHead:['Industry','Nation-State','RaaS','Hacktivism'],
+    tableRows:[['Finance','35%','42%','23%'],['Healthcare','28%','58%','14%'],['Government','55%','30%','15%'],['Technology','42%','38%','20%'],['Energy','48%','35%','17%'],['Retail','18%','62%','20%']],
+  },
+  type:{
+    labels:['Remote Code Execution','Ransomware','Phishing','Privilege Escalation','Auth Bypass','Supply Chain','Zero-Day'],
+    datasets:[
+      {label:'Nation-State / Espionage',data:[48,12,22,38,30,65,58],color:'#7c6fff'},
+      {label:'Ransomware-as-a-Service', data:[28,82,44,38,42,25,22],color:'#ff3b3b'},
+      {label:'Hacktivism',              data:[24,6,34,24,28,10,20], color:'#ffd700'},
+    ],
+    tableHead:['Attack Type','Nation-State','RaaS','Hacktivism'],
+    tableRows:[['Remote Code Execution','48%','28%','24%'],['Ransomware','12%','82%','6%'],['Phishing','22%','44%','34%'],['Privilege Escalation','38%','38%','24%'],['Auth Bypass','30%','42%','28%'],['Supply Chain Attack','65%','25%','10%'],['Zero-Day Exploit','58%','22%','20%']],
+  },
+  country:{
+    labels:['United States','United Kingdom','Germany','Japan','France','Australia','Canada','India','Brazil','Italy'],
+    datasets:[
+      {label:'Nation-State / Espionage',data:[40,38,45,52,35,30,32,28,22,34],color:'#7c6fff'},
+      {label:'Ransomware-as-a-Service', data:[38,44,38,30,48,52,50,55,62,48],color:'#ff3b3b'},
+      {label:'Hacktivism',              data:[22,18,17,18,17,18,18,17,16,18],color:'#ffd700'},
+    ],
+    tableHead:['Country','Nation-State','RaaS','Hacktivism'],
+    tableRows:[['United States','40%','38%','22%'],['United Kingdom','38%','44%','18%'],['Germany','45%','38%','17%'],['Japan','52%','30%','18%'],['France','35%','48%','17%'],['Australia','30%','52%','18%'],['Canada','32%','50%','18%'],['India','28%','55%','17%'],['Brazil','22%','62%','16%'],['Italy','34%','48%','18%']],
+  },
+  financial:{
+    labels:['2015','2016','2017','2018','2019','2020','2021','2022','2023','2024'],
+    datasets:[
+      {label:'Nation-State / Espionage',data:[42,38,44,48,40,35,32,38,41,44],color:'#7c6fff'},
+      {label:'Ransomware-as-a-Service', data:[18,28,34,38,44,50,54,44,42,40],color:'#ff3b3b'},
+      {label:'Hacktivism',              data:[40,34,22,14,16,15,14,18,17,16],color:'#ffd700'},
+    ],
+    tableHead:['Year','Nation-State %','RaaS %','Hacktivism %'],
+    tableRows:[['2015','42%','18%','40%'],['2016','38%','28%','34%'],['2017','44%','34%','22%'],['2018','48%','38%','14%'],['2019','40%','44%','16%'],['2020','35%','50%','15%'],['2021','32%','54%','14%'],['2022','38%','44%','18%'],['2023','41%','42%','17%'],['2024','44%','40%','16%']],
+  },
+};
+
+/* ════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════ */
+const FREE_LIMIT = 7;
+const KEV_PANEL_LIMIT = 50;
+const CISA_KEV_URL = `${window.CS_API_BASE}/api/content/cisa-kev`;
+let allThreats = [];
+let currentUser = null;
+let charts = {};
+let radarAngle = 0;
+let radarAnimId = null;
+let radarBlips = [];
+let currentHistTab = 'industry';
+let currentHistMode = 'volume';
+let kevData = [...CISA_KEVS_FALLBACK];
+let kevLive = false;
+
+Chart.defaults.color = 'rgba(255,255,255,0.45)';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.05)';
+Chart.defaults.font.size = 10;
+Chart.defaults.font.family = "'JetBrains Mono', monospace";
+
+/* ════════════════════════════════════════════════
+   CATEGORY FORMATTER
+════════════════════════════════════════════════ */
+const CAT_MAP = {
+  'ransomware':'Ransomware','supply-chain':'Supply Chain Attack','rce':'Remote Code Execution',
+  'remote-code-execution':'Remote Code Execution','injection':'Injection','sql-injection':'SQL Injection',
+  'command-injection':'Command Injection','xss':'Cross-Site Scripting','auth-bypass':'Authentication Bypass',
+  'authentication-bypass':'Authentication Bypass','privilege-escalation':'Privilege Escalation',
+  'zero-day':'Zero-Day Exploit','zero-day-exploit':'Zero-Day Exploit','phishing':'Phishing / Social Engineering',
+  'dos':'Denial of Service','ddos':'Distributed Denial of Service','buffer-overflow':'Buffer Overflow',
+  'deserialization':'Deserialization','man-in-the-middle':'Man-in-the-Middle','mitm':'Man-in-the-Middle',
+  'memory-corruption':'Memory Corruption','heap-overflow':'Heap Overflow','stack-overflow':'Stack Overflow',
+  'lpe':'Local Privilege Escalation','rfi':'Remote File Inclusion','lfi':'Local File Inclusion',
+  'csrf':'Cross-Site Request Forgery','idor':'Insecure Direct Object Reference',
+  'data-exfiltration':'Data Exfiltration','credential-theft':'Credential Theft',
+  'social-engineering':'Social Engineering','watering-hole':'Watering Hole Attack',
+};
+function fmtCat(c) {
+  if (!c) return 'Unknown';
+  const key = c.toLowerCase().trim();
+  if (CAT_MAP[key]) return CAT_MAP[key];
+  return c.replace(/[-_]/g,' ').replace(/\b\w/g,l=>l.toUpperCase());
+}
+
+/* ════════════════════════════════════════════════
+   SEVERITY BADGE
+════════════════════════════════════════════════ */
+function sevBadge(s) {
+  const m = {critical:'badge-critical',high:'badge-high',medium:'badge-medium',low:'badge-low'};
+  const label = s ? s.charAt(0).toUpperCase()+s.slice(1) : 'Low';
+  return `<span class="badge ${m[s]||'badge-low'}">${label}</span>`;
+}
+
+/* ════════════════════════════════════════════════
+   STATS BAR
+════════════════════════════════════════════════ */
+function updateStats(threats, totalOverride, breakdown) {
+  const total = totalOverride != null ? totalOverride : threats.length;
+  const crit  = breakdown ? breakdown.critical : threats.filter(t=>t.severity==='critical').length;
+  const high  = breakdown ? breakdown.high     : threats.filter(t=>t.severity==='high').length;
+  const med   = breakdown ? breakdown.medium   : threats.filter(t=>t.severity==='medium').length;
+  const low   = breakdown ? breakdown.low      : total - crit - high - med;
+  document.getElementById('stat-total').textContent   = total.toLocaleString();
+  document.getElementById('stat-crit').textContent    = crit;
+  document.getElementById('stat-high').textContent    = high;
+  document.getElementById('stat-med').textContent     = med;
+  document.getElementById('stat-low').textContent     = Math.max(0,low);
+  document.getElementById('stat-updated').textContent = new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+}
+
+/* ════════════════════════════════════════════════
+   TOP 10 ATTACK VECTORS (dynamic)
+════════════════════════════════════════════════ */
+const VECTOR_RULES = [
+  [/sql\s*inject|cql\s*inject/i,              'SQL Injection'],
+  [/command\s*inject|os\s*inject|shell\s*inject/i, 'Command Injection'],
+  [/cross.site\s*script|xss\b/i,              'Cross-Site Scripting'],
+  [/remote\s*code\s*exec|rce\b|code\s*exec/i, 'Remote Code Execution'],
+  [/privilege\s*escal|local\s*privilege/i,    'Privilege Escalation'],
+  [/buffer\s*overflow|heap\s*overflow|stack\s*overflow/i, 'Buffer Overflow'],
+  [/use.after.free|uaf\b/i,                   'Use-After-Free'],
+  [/denial.of.service|\bdos\b|resource\s*exhaust|flood/i, 'Denial of Service'],
+  [/path\s*travers|directory\s*travers/i,      'Path Traversal'],
+  [/authentication\s*bypass|auth\s*bypass|improper\s*auth/i, 'Auth Bypass'],
+  [/information\s*disclos|data\s*expos|sensitive\s*data/i, 'Information Disclosure'],
+  [/deserialization/i,                         'Deserialization'],
+  [/server.side\s*request|ssrf\b/i,            'SSRF'],
+  [/xml\s*extern|xxe\b/i,                      'XXE'],
+  [/open\s*redirect/i,                         'Open Redirect'],
+  [/race\s*condition|time.of.check/i,          'Race Condition'],
+  [/null\s*pointer|null\s*deref/i,             'Null Dereference'],
+  [/integer\s*overflow|integer\s*underflow/i,  'Integer Overflow'],
+  [/cross.site\s*request\s*forgery|csrf\b/i,   'CSRF'],
+  [/memory\s*corrupt|out.of.bounds|heap\s*corrupt/i, 'Memory Corruption'],
+];
+const CATEGORY_LABELS = {
+  ransomware: 'Ransomware', phishing: 'Phishing', apt: 'APT',
+  known_exploited_vulnerability: 'Known Exploited', 'us-cert-current-activity': 'US-CERT Advisory',
+};
+function classifyVector(t) {
+  if (t.threat_category && CATEGORY_LABELS[t.threat_category]) return CATEGORY_LABELS[t.threat_category];
+  const text = t.threat_name || '';
+  for (const [re, label] of VECTOR_RULES) { if (re.test(text)) return label; }
+  if (t.threat_category && t.threat_category !== 'vulnerability') return fmtCat(t.threat_category);
+  if (t.category === 'known_exploited_vulnerability') return 'Known Exploited';
+  if (t.category === 'us-cert-current-activity') return 'US-CERT Advisory';
+  return 'Other Vulnerability';
+}
+function renderTop10(threats) {
+  const body = document.getElementById('top10-body');
+  if (!threats.length) { body.innerHTML = '<div class="top10-empty">No threat data available.</div>'; return; }
+  const counts = {};
+  threats.forEach(t => {
+    const k = classifyVector(t);
+    counts[k] = (counts[k]||0) + 1;
+  });
+  const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const max = sorted[0]?.[1] || 1;
+  body.innerHTML = sorted.map(([name,count],i) => `
+    <div class="top10-row">
+      <span class="top10-rank">${i+1}</span>
+      <span class="top10-name" title="${name}">${name}</span>
+      <div class="top10-bar-wrap">
+        <div class="top10-bar-track">
+          <div class="top10-bar-fill" style="width:${(count/max*100).toFixed(0)}%"></div>
+        </div>
+      </div>
+      <span class="top10-count">${count}</span>
+    </div>`).join('');
+}
+
+/* ════════════════════════════════════════════════
+   T2: ASSET TAGGING
+════════════════════════════════════════════════ */
+const AI_INFRA_RE   = /litellm|langflow|langgraph|ollama|\bllm\b|agentic\s+ai|ai\s+infra/i;
+const CLOUD_NATIVE_RE = /kubernetes|k8s|\bdocker\b|container|serverless|\blambda\b|cloud.native|terraform|\biac\b|\bhelm\b|istio|envoy|cloud\s+config/i;
+
+function computeAssetTags(text) {
+  const tags = [];
+  if (AI_INFRA_RE.test(text))    tags.push({ label:'AI Infrastructure', cls:'tag-ai' });
+  if (CLOUD_NATIVE_RE.test(text)) tags.push({ label:'Cloud Native',      cls:'tag-cloud' });
+  return tags;
+}
+function renderAssetTags(tags) {
+  if (!tags.length) return '';
+  return `<div class="asset-tag-pills">${tags.map(t=>`<span class="asset-tag-pill ${t.cls}">${t.label}</span>`).join('')}</div>`;
+}
+
+/* ════════════════════════════════════════════════
+   LIVE RADAR FEED
+════════════════════════════════════════════════ */
+function threatRow(t) {
+  if (!t.threat_name) return '';
+  const article = t.article_link
+    ? `<a href="intel/article.html?slug=${t.article_link.split('/').pop()}" class="rdr-link">Brief →</a>`
+    : `<span class="rdr-pending">Pending</span>`;
+  const tagText = (t.threat_name||'') + ' ' + (t.cve_id||'') + ' ' + (t.tags||[]).join(' ');
+  const tagHtml = renderAssetTags(computeAssetTags(tagText));
+  return `<tr class="threat-row" data-severity="${t.severity||''}" data-name="${(t.threat_name||'').toLowerCase()}" data-cve="${(t.cve_id||'').toLowerCase()}">
+    <td>${sevBadge(t.severity)}</td>
+    <td class="rdr-cell-name">${t.threat_name}${tagHtml}<div class="rdr-cell-cve">${t.cve_id||''}</div></td>
+    <td class="rdr-cell-cvss">${parseFloat(t.cvss_score||0).toFixed(1)}</td>
+    <td>${article}</td>
+  </tr>`;
+}
+
+/* ── T1: Mobile card helpers ── */
+function mobileCard(t, isBlurred) {
+  const tagText = (t.threat_name||'') + ' ' + (t.cve_id||'') + ' ' + (t.tags||[]).join(' ');
+  const tagHtml = renderAssetTags(computeAssetTags(tagText));
+  return `<div class="radar-card${isBlurred?' row-blurred':''}">
+    <div class="card-top-row">${sevBadge(t.severity)}${t.cve_id?`<span class="card-cve">${t.cve_id}</span>`:''}</div>
+    <div class="card-threat-name">${t.threat_name||'—'}</div>
+    ${tagHtml}
+    <div class="card-meta-row"><span class="card-cvss">CVSS ${parseFloat(t.cvss_score||0).toFixed(1)}</span></div>
+  </div>`;
+}
+
+function renderMobileCards(threats, isSub) {
+  const el = document.getElementById('radar-mobile-view');
+  if (!el || !threats.length) { if(el) el.innerHTML=''; return; }
+  let html = mobileCard(threats[0], false);
+  const rest = threats.slice(1);
+  if (!isSub && rest.length) {
+    html += rest.slice(0, 5).map(t => mobileCard(t, true)).join('');
+    html += `<div class="conversion-curtain">
+      <div class="curtain-cta">
+        <h4>Unlock Full Radar Feed</h4>
+        <p>All tracked threats plus real-time CVE alerts. Free to start.</p>
+        <a href="newsletter.html#subscribe" class="btn btn-primary btn-sm">Subscribe Free</a>
+      </div>
+    </div>`;
+  } else {
+    html += rest.map(t => mobileCard(t, false)).join('');
+  }
+  el.innerHTML = html;
+}
+
+function renderFeed(threats, isSub) {
+  const body    = document.getElementById('radar-body');
+  const gate    = document.getElementById('radar-gate');
+  const blurred = document.getElementById('blurred-rows');
+  const meta    = document.getElementById('radar-meta');
+  if (!threats.length) { body.innerHTML = '<tr><td colspan="4" class="rdr-empty">No threats tracked yet.</td></tr>'; return; }
+  const visible = isSub ? threats : threats.slice(0,FREE_LIMIT);
+  const hidden  = isSub ? [] : threats.slice(FREE_LIMIT);
+  body.innerHTML = visible.map(threatRow).join('');
+  gate.style.display = hidden.length ? 'block' : 'none';
+  if (hidden.length) blurred.innerHTML = hidden.map(threatRow).join('');
+  const showing = isSub ? threats.length : Math.min(FREE_LIMIT,threats.length);
+  meta.textContent = `Showing ${showing} of ${threats.length} threats · NVD CVSS + CyberSense analyst severity`;
+  renderMobileCards(threats, isSub);
+}
+
+function filterFeed() {
+  const sev    = document.getElementById('severity-filter').value.toLowerCase();
+  const search = document.getElementById('threat-search').value.toLowerCase();
+  document.querySelectorAll('.threat-row').forEach(row => {
+    const ok = (!sev || row.dataset.severity === sev) &&
+               (!search || row.dataset.name.includes(search) || row.dataset.cve.includes(search));
+    row.style.display = ok ? '' : 'none';
   });
 }
+
+/* ════════════════════════════════════════════════
+   VULNERABILITY DISTRIBUTION (chart)
+════════════════════════════════════════════════ */
+function renderVulnDist() {
+  if (charts.vulnDist) { charts.vulnDist.destroy(); }
+  charts.vulnDist = new Chart(document.getElementById('chart-vulndist'), {
+    type: 'line',
+    data: {
+      labels: VULN_DIST.labels,
+      datasets: [
+        { label:'Critical', data:VULN_DIST.critical, borderColor:'#ff3b3b', backgroundColor:'rgba(255,59,59,0.12)', fill:true, tension:.35, pointRadius:3, pointBackgroundColor:'#ff3b3b' },
+        { label:'High',     data:VULN_DIST.high,     borderColor:'#ff8c00', backgroundColor:'rgba(255,140,0,0.08)',  fill:true, tension:.35, pointRadius:3, pointBackgroundColor:'#ff8c00' },
+        { label:'Med/Low',  data:VULN_DIST.medlow,   borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.06)', fill:true, tension:.35, pointRadius:3, pointBackgroundColor:'#00d4ff' },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{labels:{color:'rgba(255,255,255,0.5)',boxWidth:10,padding:12},position:'top'},
+        tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw}`}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'rgba(255,255,255,0.35)'}},
+        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'rgba(255,255,255,0.35)'},beginAtZero:true}
+      }
+    }
+  });
+}
+
+/* ════════════════════════════════════════════════
+   CISA KEV — Live Feed
+════════════════════════════════════════════════ */
+function fmtDate(str) {
+  if (!str) return '—';
+  const d = new Date(str + 'T00:00:00');
+  return isNaN(d) ? str : d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+
+function kevEntryHTML(k) {
+  const tagHtml = renderAssetTags(computeAssetTags((k.attack||'') + ' ' + (k.desc||'') + ' ' + (k.product||'')));
+  return `<div class="kev-entry">
+    <div class="kev-row-top">
+      <div>
+        <div class="kev-cve">${k.cve}${tagHtml ? `&nbsp;${tagHtml}` : ''}</div>
+        <div class="kev-vendor">${k.vendor} &mdash; <span style="color:rgba(255,255,255,0.38);">${k.product}</span></div>
+      </div>
+      <span class="kev-badge">KEV</span>
+    </div>
+    <div class="kev-row-bot">
+      <span class="kev-attack">${k.attack}</span>
+      <span class="kev-dates">Added ${k.added} &middot; Due ${k.due}</span>
+    </div>
+  </div>`;
+}
+
+function renderKEV(filter='') {
+  const q = filter.toLowerCase().trim();
+  const pool = q ? kevData.filter(k =>
+    k.cve.toLowerCase().includes(q) ||
+    k.vendor.toLowerCase().includes(q) ||
+    k.product.toLowerCase().includes(q) ||
+    k.attack.toLowerCase().includes(q)
+  ) : kevData;
+
+  const display = q ? pool : pool.slice(0, KEV_PANEL_LIMIT);
+  const listEl  = document.getElementById('kev-list');
+  const metaBar = document.getElementById('kev-meta-bar');
+  const metaL   = document.getElementById('kev-meta-left');
+  const metaR   = document.getElementById('kev-meta-right');
+
+  if (!display.length) {
+    listEl.innerHTML = '<div class="kev-no-results">No entries match your search.</div>';
+  } else {
+    listEl.innerHTML = display.map(kevEntryHTML).join('');
+  }
+
+  if (metaBar) {
+    metaBar.style.display = '';
+    metaL.innerHTML = kevLive
+      ? `<span class="kev-live-dot"></span>Live — CISA catalog`
+      : 'Cached data — live fetch unavailable';
+    metaR.textContent = q
+      ? `${pool.length} match${pool.length!==1?'es':''} of ${kevData.length}`
+      : `Showing ${display.length} of ${kevData.length} total`;
+  }
+}
+
+function filterKEV(val) { renderKEV(val); }
+
+async function loadCISAKEV() {
+  const listEl = document.getElementById('kev-list');
+  if (listEl) listEl.innerHTML = '<div class="kev-no-results" style="color:rgba(255,255,255,0.25);">Loading CISA KEV catalog…</div>';
+
+  try {
+    const res  = await fetch(CISA_KEV_URL, { signal: AbortSignal.timeout(15000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    const vulns = (json.vulnerabilities || [])
+      .sort((a,b) => new Date(b.dateAdded) - new Date(a.dateAdded));
+
+    kevData = vulns.map(v => ({
+      cve:     v.cveID,
+      vendor:  v.vendorProject,
+      product: v.product,
+      attack:  v.vulnerabilityName,
+      added:   fmtDate(v.dateAdded),
+      due:     fmtDate(v.dueDate),
+      desc:    v.shortDescription || '',
+    }));
+    kevLive = true;
+
+    const countEl = document.getElementById('kev-count');
+    if (countEl) countEl.textContent = `(${kevData.length.toLocaleString()} entries)`;
+    const subtitleEl = document.getElementById('kev-subtitle');
+    if (subtitleEl) subtitleEl.textContent = `CONFIRMED, WEAPONIZED VULNERABILITIES · v${json.catalogVersion || ''}`;
+  } catch(e) {
+    console.warn('CISA KEV live fetch failed — using fallback:', e.message);
+    kevLive = false;
+  } finally {
+    renderKEV(document.getElementById('kev-search')?.value || '');
+  }
+}
+
+/* ════════════════════════════════════════════════
+   HISTORICAL DATABASE
+════════════════════════════════════════════════ */
+function switchHistMode(mode, el) {
+  currentHistMode = mode;
+  document.querySelectorAll('.hist-mode-btn').forEach(b=>b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (mode === 'vector') renderHistoricalVector(currentHistTab);
+  else renderHistorical(currentHistTab);
+}
+
+function switchHistTab(tab, el) {
+  currentHistTab = tab;
+  document.querySelectorAll('.hist-tab').forEach(t=>t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (currentHistMode === 'vector') renderHistoricalVector(tab);
+  else renderHistorical(tab);
+}
+
+function renderHistoricalVector(tab) {
+  if (charts.hist) { charts.hist.destroy(); charts.hist = null; }
+  const d = HIST_VECTOR[tab];
+  const ctx = document.getElementById('chart-hist');
+  charts.hist = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: d.labels,
+      datasets: d.datasets.map(ds=>({ label:ds.label, data:ds.data, backgroundColor:ds.color+'99', borderColor:ds.color, borderWidth:1, borderRadius:2 }))
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'rgba(255,255,255,0.5)',boxWidth:10,padding:10,font:{size:9}},position:'top'},
+        tooltip:{mode:'index',intersect:false,callbacks:{label:c=>` ${c.dataset.label}: ${c.raw}%`}}
+      },
+      scales:{
+        x:{stacked:true,grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'rgba(255,255,255,0.3)',font:{size:8},maxRotation:35}},
+        y:{stacked:true,max:100,grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'rgba(255,255,255,0.3)',callback:v=>v+'%'},beginAtZero:true}
+      }
+    }
+  });
+  const colors = d.datasets.map(ds=>ds.color);
+  document.getElementById('hist-thead').innerHTML='<tr>'+d.tableHead.map(h=>`<th>${h}</th>`).join('')+'</tr>';
+  document.getElementById('hist-tbody').innerHTML=d.tableRows.map(row=>
+    '<tr>'+row.map((c,i)=>`<td${i>0?` style="color:${colors[i-1]||'var(--cs-cyan)'};font-weight:700;"`:''} >${c}</td>`).join('')+'</tr>'
+  ).join('');
+}
+
+function renderHistorical(tab) {
+  if (charts.hist) { charts.hist.destroy(); charts.hist = null; }
+  const d = HIST[tab];
+  const ctx = document.getElementById('chart-hist');
+
+  if (tab === 'industry') {
+    charts.hist = new Chart(ctx, {
+      type:'line',
+      data:{ labels:d.labels, datasets: d.datasets.map(ds=>({ label:ds.label, data:ds.data, borderColor:ds.color, backgroundColor:'transparent', tension:.3, pointRadius:2, borderWidth:1.5 })) },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{color:'rgba(255,255,255,0.4)',boxWidth:8,padding:8,font:{size:9}}}, tooltip:{mode:'index',intersect:false} }, scales:{ x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'rgba(255,255,255,0.3)'}}, y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'rgba(255,255,255,0.3)'},beginAtZero:true} } }
+    });
+  } else if (tab === 'type') {
+    charts.hist = new Chart(ctx, {
+      type:'bar',
+      data:{ labels:d.labels.map(l=>l.length>22?l.slice(0,20)+'…':l), datasets:[{ data:d.data, backgroundColor:'rgba(0,212,255,0.55)', hoverBackgroundColor:'#00d4ff', borderRadius:3 }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${ctx.raw.toLocaleString()} incidents`}} }, scales:{ x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'rgba(255,255,255,0.3)'}}, y:{grid:{display:false},ticks:{color:'rgba(255,255,255,0.55)',font:{size:8}}} } }
+    });
+  } else if (tab === 'country') {
+    charts.hist = new Chart(ctx, {
+      type:'bar',
+      data:{ labels:d.labels, datasets:[{ data:d.data, backgroundColor:d.data.map((_,i)=>`rgba(0,212,255,${0.8-i*0.06})`), borderRadius:3 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>` ${ctx.raw.toLocaleString()} incidents`}} }, scales:{ x:{grid:{display:false},ticks:{color:'rgba(255,255,255,0.3)',font:{size:8},maxRotation:45}}, y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'rgba(255,255,255,0.3)'}} } }
+    });
+  } else if (tab === 'financial') {
+    charts.hist = new Chart(ctx, {
+      type:'line',
+      data:{ labels:d.labels, datasets:[{ label:'Global Loss ($B)', data:d.data, borderColor:'#ffd700', backgroundColor:'rgba(255,215,0,0.08)', fill:true, tension:.35, pointRadius:3, pointBackgroundColor:'#ffd700' }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>` $${ctx.raw}B`}} }, scales:{ x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'rgba(255,255,255,0.3)'}}, y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'rgba(255,255,255,0.3)',callback:v=>'$'+v+'B'},beginAtZero:true} } }
+    });
+  }
+
+  document.getElementById('hist-thead').innerHTML = '<tr>'+d.tableHead.map(h=>`<th>${h}</th>`).join('')+'</tr>';
+  document.getElementById('hist-tbody').innerHTML = d.tableRows.map(row=>'<tr>'+row.map((c,i)=>`<td${i===row.length-1?' style="color:var(--cs-cyan);font-weight:700;"':''}>${c}</td>`).join('')+'</tr>').join('');
+}
+
+/* ════════════════════════════════════════════════
+   RADAR SWEEP ANIMATION
+════════════════════════════════════════════════ */
+function initBlips() {
+  // Approximate normalized positions of major compromise zones
+  const zones = [
+    {x:.22,y:.35},{x:.19,y:.38},{x:.50,y:.30},{x:.55,y:.33},
+    {x:.76,y:.40},{x:.73,y:.43},{x:.62,y:.48},{x:.30,y:.60},
+    {x:.82,y:.68},{x:.51,y:.25},{x:.48,y:.35},{x:.58,y:.38},
+  ];
+  radarBlips = zones.map(z=>({...z,alpha:0}));
+}
+
+function syncRadarCanvas() {
+  const wrap = document.getElementById('radar-circle');
+  const rc   = document.getElementById('radar-canvas');
+  if (!wrap || !rc) return;
+  rc.width  = wrap.offsetWidth;
+  rc.height = wrap.offsetHeight;
+}
+
+function drawRadar() {
+  const canvas = document.getElementById('radar-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  if (!W || !H) return;
+  const cx = W/2, cy = H/2, R = Math.min(W,H)/2 - 2;
+
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(cx,cy,R,0,Math.PI*2);
+  ctx.clip();
+
+  // Overlay tint so map shows through
+  ctx.fillStyle = 'rgba(4,8,15,0.52)';
+  ctx.fillRect(0,0,W,H);
+
+  // Concentric rings
+  for (let i=1;i<=5;i++) {
+    ctx.beginPath();
+    ctx.arc(cx,cy,R*i/5,0,Math.PI*2);
+    ctx.strokeStyle=i===5?'rgba(0,212,255,0.18)':'rgba(0,212,255,0.07)';
+    ctx.lineWidth=i===5?1.5:0.8;
+    ctx.stroke();
+  }
+
+  // Grid spokes
+  for (let a=0;a<360;a+=30) {
+    const rad=a*Math.PI/180;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+R*Math.cos(rad),cy+R*Math.sin(rad));
+    ctx.strokeStyle='rgba(0,212,255,0.06)'; ctx.lineWidth=0.5; ctx.stroke();
+  }
+
+  // Degree labels on rim
+  ctx.font='8px monospace'; ctx.fillStyle='rgba(0,212,255,0.3)';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for (let a=0;a<360;a+=30) {
+    const rad=a*Math.PI/180, lr=R-10;
+    ctx.fillText(a, cx+lr*Math.cos(rad), cy+lr*Math.sin(rad));
+  }
+
+  // Sweep trail
+  for (let i=90;i>=0;i-=6) {
+    const sa=radarAngle-(i*Math.PI/180), na=sa+(6*Math.PI/180);
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,R,sa,na); ctx.closePath();
+    ctx.fillStyle=`rgba(0,212,255,${0.12*(1-i/90)})`; ctx.fill();
+  }
+
+  // Sweep line
+  ctx.beginPath(); ctx.moveTo(cx,cy);
+  ctx.lineTo(cx+R*Math.cos(radarAngle),cy+R*Math.sin(radarAngle));
+  ctx.strokeStyle='#00d4ff'; ctx.lineWidth=1.5;
+  ctx.shadowBlur=8; ctx.shadowColor='rgba(0,212,255,0.7)'; ctx.stroke();
+  ctx.shadowBlur=0;
+
+  // Blips
+  radarBlips.forEach(b => {
+    const bx=cx+(b.x-0.5)*2*R, by=cy+(b.y-0.5)*2*R;
+    const bAng=Math.atan2(by-cy,bx-cx);
+    let diff=radarAngle-bAng;
+    while(diff<0) diff+=Math.PI*2;
+    while(diff>Math.PI*2) diff-=Math.PI*2;
+    if(diff<0.09) b.alpha=1;
+    if(b.alpha>0) {
+      ctx.beginPath(); ctx.arc(bx,by,3,0,Math.PI*2);
+      ctx.fillStyle=`rgba(0,255,160,${b.alpha})`; ctx.fill();
+      ctx.beginPath(); ctx.arc(bx,by,6*(1-b.alpha/2),0,Math.PI*2);
+      ctx.strokeStyle=`rgba(0,255,160,${b.alpha*0.4})`; ctx.lineWidth=1; ctx.stroke();
+      b.alpha=Math.max(0,b.alpha-0.007);
+    }
+  });
+
+  ctx.restore();
+}
+
+function animateRadar() {
+  radarAngle+=0.012;
+  if(radarAngle>Math.PI*2) radarAngle-=Math.PI*2;
+  drawRadar();
+  radarAnimId=requestAnimationFrame(animateRadar);
+}
+
+/* ════════════════════════════════════════════════
+   WORLD MAP
+════════════════════════════════════════════════ */
+async function initMap() {
+  try {
+    const res   = await fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
+    const world = await res.json();
+    const countries = ChartGeo.topojson.feature(world, world.objects.countries);
+    const mapCanvas = document.getElementById('chart-map');
+    const wrap = document.getElementById('radar-circle');
+    mapCanvas.width  = wrap.offsetWidth;
+    mapCanvas.height = wrap.offsetHeight;
+
+    mapChart = new Chart(mapCanvas, {
+      type:'choropleth',
+      data:{
+        labels: countries.features.map(d=>GEO_DATA[d.id]?.name||d.properties?.name||''),
+        datasets:[{
+          label:'Compromise Density',
+          outline: countries.features,
+          data: countries.features.map(d=>({ feature:d, value:GEO_DATA[d.id]?.value||0 })),
+          borderColor:'rgba(0,212,255,0.15)',
+          borderWidth:0.5
+        }]
+      },
+      options:{
+        showOutline:false, showGraticule:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{
+            title:()=>'',
+            label:ctx=>{
+              const id=ctx.raw?.feature?.id, val=ctx.raw?.value||0;
+              const name=GEO_DATA[id]?.name||ctx.label||'Unknown';
+              if(!val) return `${name}: No tracked activity`;
+              const pct=((val/GEO_MAX)*100).toFixed(0);
+              const detail = geoLive
+                ? `${val.toFixed(1)}% of tracked attack traffic`
+                : `${val} compromised targets tracked`;
+              return [`${name}`, detail, `${pct}% relative density`];
+            }
+          }}
+        },
+        scales:{
+          color:{
+            axis:'color', quantize:8, legend:{display:false}, min:0, max:GEO_MAX,
+            interpolate:v=>{
+              if(!v||v<0.01) return 'rgba(4,8,20,0.9)';
+              const r=Math.round(v*20), g=Math.round(60+v*160), b=Math.round(120+v*135);
+              return `rgba(${r},${g},${b},${0.2+v*0.8})`;
+            }
+          },
+          projection:{ axis:'x', projection:'azimuthalEquidistant' }
+        }
+      }
+    });
+
+    syncRadarCanvas();
+    initBlips();
+    animateRadar();
+    loadGeoTelemetry();
+  } catch(e) {
+    console.warn('Map load failed:',e);
+    document.getElementById('radar-circle').innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,0.25);font-size:12px;">Map data unavailable</div>';
+    syncRadarCanvas();
+    initBlips();
+    animateRadar();
+  }
+}
+
+/* ════════════════════════════════════════════════
+   HEATMAP MATRIX — CWE Category × System Tier
+════════════════════════════════════════════════ */
+const HM_TIERS = ['Edge Devices','Cloud','OS / Kernel','Software'];
+const HM_ROWS = [
+  { name:'Injection',           vals:[3,8,5,9] },
+  { name:'Memory Corruption',   vals:[8,3,9,7] },
+  { name:'Authentication',      vals:[7,9,6,8] },
+  { name:'Cryptographic',       vals:[5,7,4,6] },
+  { name:'Misconfiguration',    vals:[9,8,5,7] },
+  { name:'Access Control',      vals:[6,9,7,8] },
+];
+const CWE_CATEGORY_MAP = {
+  'CWE-89':'Injection','CWE-79':'Injection','CWE-94':'Injection','CWE-917':'Injection','CWE-77':'Injection','CWE-78':'Injection',
+  'CWE-119':'Memory Corruption','CWE-125':'Memory Corruption','CWE-787':'Memory Corruption','CWE-416':'Memory Corruption','CWE-476':'Memory Corruption','CWE-122':'Memory Corruption',
+  'CWE-287':'Authentication','CWE-306':'Authentication','CWE-307':'Authentication','CWE-798':'Authentication','CWE-521':'Authentication',
+  'CWE-326':'Cryptographic','CWE-327':'Cryptographic','CWE-338':'Cryptographic','CWE-295':'Cryptographic',
+  'CWE-16':'Misconfiguration','CWE-732':'Misconfiguration','CWE-276':'Misconfiguration','CWE-1188':'Misconfiguration',
+  'CWE-284':'Access Control','CWE-269':'Access Control','CWE-862':'Access Control','CWE-863':'Access Control','CWE-22':'Access Control',
+};
+function hmInferTier(t) {
+  const text = ((t.tags||[]).join(' ')+' '+(t.threat_name||'')).toLowerCase();
+  if(text.includes('edge')||text.includes('router')||text.includes('iot')||text.includes('firmware')) return 'Edge Devices';
+  if(text.includes('cloud')||text.includes('aws')||text.includes('azure')||text.includes('gcp')) return 'Cloud';
+  if(text.includes('kernel')||text.includes('os ')||text.includes('windows')||text.includes('linux')) return 'OS / Kernel';
+  return 'Software';
+}
+function computeHeatmapRows(threats) {
+  const cats = ['Injection','Memory Corruption','Authentication','Cryptographic','Misconfiguration','Access Control'];
+  const matrix = {};
+  cats.forEach(c=>{ matrix[c]={}; HM_TIERS.forEach(ti=>{ matrix[c][ti]=0; }); });
+  threats.forEach(t=>{
+    if(!t.cwe_id) return;
+    const cat = CWE_CATEGORY_MAP[t.cwe_id];
+    if(!cat) return;
+    matrix[cat][hmInferTier(t)]++;
+  });
+  const maxVal = Math.max(...cats.flatMap(c=>HM_TIERS.map(ti=>matrix[c][ti])),1);
+  const rows = cats.map(name=>({ name, vals:HM_TIERS.map(ti=>Math.round(matrix[name][ti]/maxVal*10)) }))
+    .filter(row=>row.vals.some(v=>v>0));
+  return rows.length ? rows : null;
+}
+/* ── T3: Tooltip map ── */
+const HM_TOOLTIP_MAP = {
+  'Injection|Edge Devices':        'Prioritize firmware input validation on edge devices. Enforce strict allowlists for CLI parameters and management web UIs exposed to untrusted networks.',
+  'Injection|Cloud':               'Audit IAM permission boundaries. Parameterize all cloud API calls and enforce input validation on serverless function triggers and API gateway inputs.',
+  'Injection|OS / Kernel':         'Patch system call interfaces promptly. Enforce seccomp profiles and restrict kernel module loading to signed, verified binaries only.',
+  'Injection|Software':            'Enforce parameterized queries and prepared statements across all data access layers. Integrate SAST into CI/CD gates for injection pattern detection.',
+  'Memory Corruption|Edge Devices':'Enforce ASLR and stack canaries in firmware builds. Segment device memory and disable debug interfaces in production deployments.',
+  'Memory Corruption|Cloud':       'Use memory-safe container runtimes. Enforce strict resource limits and isolate workloads with namespace-level and cgroup controls.',
+  'Memory Corruption|OS / Kernel': 'Apply kernel hardening patches immediately — this is the highest-activity cluster for memory corruption. Enable KASLR and enforce kernel pointer restrictions.',
+  'Memory Corruption|Software':    'Migrate sensitive parsing components to memory-safe languages where feasible. Enforce bounds checking and fuzz critical parsing routines in CI.',
+  'Authentication|Edge Devices':   'Disable default credentials and enforce certificate-based authentication on all management interfaces. Rotate credentials after any device replacement.',
+  'Authentication|Cloud':          'High activity cluster: Enforce short-lived IAM session tokens. Audit orphaned service accounts for wildcard privileges and rotate credentials on a defined cycle.',
+  'Authentication|OS / Kernel':    'Enforce PAM hardening and key-based SSH authentication. Disable password-based root login and audit all privilege escalation paths.',
+  'Authentication|Software':       'Implement MFA across all authentication surfaces. Rotate API keys and session tokens regularly. Audit source for hardcoded credentials.',
+  'Cryptographic|Edge Devices':    'Disable legacy cipher suites (TLS 1.0/1.1, RC4, DES) in firmware. Ensure OTA update channels enforce cryptographic signature validation.',
+  'Cryptographic|Cloud':           'Enforce TLS 1.3 in transit and AES-256 at rest for all storage volumes and object buckets. Audit key management lifecycle and rotation policy.',
+  'Cryptographic|OS / Kernel':     'Ensure disk encryption keys are stored in HSMs or TPM-backed keystores. Audit kernel entropy sources used for key material generation.',
+  'Cryptographic|Software':        'Audit cryptographic library versions. Replace deprecated algorithms (MD5, SHA-1). Enforce CSPRNG for all session token and key generation.',
+  'Misconfiguration|Edge Devices': 'Automate compliance scanning for edge device configs. Remove unused services and close non-essential ports on management interfaces.',
+  'Misconfiguration|Cloud':        'High activity cluster: Run CSPM continuously. Enforce least-privilege IAM and scan for publicly exposed storage buckets and open security groups.',
+  'Misconfiguration|OS / Kernel':  'Enforce CIS Benchmark baselines via automated scanning. Remove unnecessary system services and restrict kernel module loading to signed binaries.',
+  'Misconfiguration|Software':     'Harden application server configurations. Remove default error pages and debug endpoints. Enforce security headers on all HTTP responses.',
+  'Access Control|Edge Devices':   'Enforce network segmentation and ACL-level isolation between device management and data planes.',
+  'Access Control|Cloud':          'High activity cluster: Ensure IAM policies enforce short-lived sessions. Verify that orphaned service accounts do not possess wildcard privileges. Audit cross-account trust relationships.',
+  'Access Control|OS / Kernel':    'Audit sudo rules and SUID binaries. Enforce mandatory access control profiles (AppArmor / SELinux) on all high-value processes.',
+  'Access Control|Software':       'Enforce RBAC with explicit deny defaults. Audit all authorization check bypasses and validate object-level access on every request path.',
+};
+
+let hmTooltipEl = null;
+function getHmTooltip() {
+  if (!hmTooltipEl) {
+    hmTooltipEl = document.createElement('div');
+    hmTooltipEl.className = 'hm-tooltip';
+    hmTooltipEl.style.display = 'none';
+    document.body.appendChild(hmTooltipEl);
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.hm-cell')) hmTooltipEl.style.display = 'none';
+    });
+  }
+  return hmTooltipEl;
+}
+function showHmTooltip(e, rowName, tierName, val) {
+  e.stopPropagation();
+  const tt = getHmTooltip();
+  const brief = HM_TOOLTIP_MAP[`${rowName}|${tierName}`]
+    || `Activity cluster detected: ${rowName} × ${tierName}. Review controls specific to this tier.`;
+  tt.innerHTML = `<div class="hm-tooltip-coords">${rowName} &times; ${tierName} &mdash; Activity ${val}/10</div><div class="hm-tooltip-brief">${brief}</div>`;
+  tt.style.display = 'block';
+  const r = tt.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+  let x = e.clientX + 12, y = e.clientY + 12;
+  if (x + r.width  > vw - 8) x = e.clientX - r.width  - 12;
+  if (y + r.height > vh - 8) y = e.clientY - r.height - 12;
+  tt.style.left = Math.max(8, x) + 'px';
+  tt.style.top  = Math.max(8, y) + 'px';
+}
+
+let liveHmRows = null;
+function hmColor(v) {
+  // 0–10 → low navy to high cyan
+  const t = v / 10;
+  const r = Math.round(t * 20);
+  const g = Math.round(60 + t * 160);
+  const b = Math.round(120 + t * 135);
+  const a = 0.25 + t * 0.7;
+  return `rgba(${r},${g},${b},${a})`;
+}
+function buildHeatmapHTML(expanded, rows) {
+  rows = rows || liveHmRows || HM_ROWS;
+  const cellPad = expanded ? '10px 14px' : '6px 8px';
+  return `<table class="heatmap-tbl" style="${expanded?'font-size:12px;':''}">
+    <thead><tr>
+      <th style="font-family:var(--cs-mono);">CWE Category</th>
+      ${HM_TIERS.map(t=>`<th style="font-family:var(--cs-mono);">${t}</th>`).join('')}
+    </tr></thead>
+    <tbody>${rows.map(row=>`<tr>
+      <td style="font-family:var(--cs-mono);padding:${cellPad};color:rgba(255,255,255,0.65);">${row.name}</td>
+      ${row.vals.map((v,ti)=>`<td style="padding:${cellPad};">
+        <span class="hm-cell"
+          style="background:${hmColor(v)};color:${v>=7?'rgba(255,255,255,0.9)':'rgba(255,255,255,0.55)'};"
+          onclick="showHmTooltip(event,'${row.name}','${HM_TIERS[ti]}',${v})"
+          role="button" tabindex="0" aria-label="${row.name} × ${HM_TIERS[ti]}, activity ${v}">${v}</span>
+      </td>`).join('')}
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+function renderHeatmap(threats) {
+  if(threats && threats.length) {
+    const computed = computeHeatmapRows(threats);
+    if(computed) liveHmRows = computed;
+  }
+  const el = document.getElementById('heatmap-body');
+  if (el) el.innerHTML = buildHeatmapHTML(false);
+}
+
+/* ════════════════════════════════════════════════
+   INDUSTRIES TARGETED — Donut Chart
+════════════════════════════════════════════════ */
+const IND_DATA = {
+  labels: ['Finance','Technology','Government','Healthcare','Energy','Manufacturing'],
+  data:   [22, 21, 16, 18, 12, 11],
+  colors: ['#00d4ff','#4da6ff','#7c6fff','#00c896','#ffd700','#ff8c40'],
+};
+const IND_SECTOR_KEYS = ['finance','technology','government','healthcare','energy','manufacturing'];
+function computeIndustriesData(threats) {
+  const counts = {};
+  IND_SECTOR_KEYS.forEach(k=>{ counts[k]=0; });
+  threats.forEach(t=>{ (t.sector_tags||[]).forEach(tag=>{ if(counts[tag]!==undefined) counts[tag]++; }); });
+  const total = Object.values(counts).reduce((a,b)=>a+b,0);
+  if(!total) return null;
+  return IND_SECTOR_KEYS.map(k=>Math.round(counts[k]/total*100));
+}
+let industriesChart = null;
+function renderIndustriesChart(canvas, legendFontSize) {
+  return new Chart(canvas, {
+    type:'doughnut',
+    data:{
+      labels: IND_DATA.labels,
+      datasets:[{
+        data: IND_DATA.data,
+        backgroundColor: IND_DATA.colors.map(c=>c+'aa'),
+        borderColor: IND_DATA.colors,
+        borderWidth: 1.5,
+        hoverOffset: 8,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{
+        legend:{
+          display:true, position:'right',
+          labels:{ color:'rgba(255,255,255,0.65)', font:{size:legendFontSize||10, family:'JetBrains Mono,monospace'}, boxWidth:10, padding:10 }
+        },
+        tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw}%`}}
+      }
+    }
+  });
+}
+function renderIndustries(threats) {
+  const canvas = document.getElementById('chart-industries');
+  if (!canvas) return;
+  if (industriesChart) { industriesChart.destroy(); industriesChart = null; }
+  if(threats && threats.length) {
+    const liveData = computeIndustriesData(threats);
+    if(liveData) IND_DATA.data = liveData;
+  }
+  industriesChart = renderIndustriesChart(canvas, 10);
+}
+
+async function loadGeoTelemetry() {
+  if (!mapChart) return;
+  try {
+    const resp = await fetch(`${window.CS_API_BASE}/api/content/geo-telemetry`);
+    if (!resp.ok) return;
+    const { countries } = await resp.json();
+    if (!countries || !Object.keys(countries).length) return;
+
+    // Build numeric-keyed value map from alpha-2 percentages
+    const byNum = {};
+    for (const [a2, pct] of Object.entries(countries)) {
+      const num = A2_TO_NUM[a2];
+      if (num) byNum[num] = pct;
+    }
+
+    // Update chart dataset values in-place
+    const ds = mapChart.data.datasets[0];
+    ds.data = ds.data.map(d => ({ ...d, value: byNum[d.feature.id] || 0 }));
+
+    // Update color scale to match live range (percentage domain)
+    GEO_MAX = Math.max(...Object.values(byNum), 1);
+    mapChart.options.scales.color.max = GEO_MAX;
+    geoLive = true;
+    mapChart.update('none');
+  } catch (e) {
+    console.warn('Geo-telemetry unavailable — using static data:', e.message);
+  }
+}
+
+/* ════════════════════════════════════════════════
+   FULLSCREEN EXPAND
+════════════════════════════════════════════════ */
+const EXPAND_TITLES = {
+  top10:'Top 10 Attack Vectors — 2026 YTD',
+  feed:'Live Radar Feed',
+  vulndist:'Vulnerability Distribution — 2026 YTD by Month',
+  kev:'CISA KEV — Known Exploited Vulnerabilities',
+  heatmap:'Vulnerability Heatmap Matrix — CWE Category × System Tier',
+  industries:'Industries Targeted — 2026 YTD',
+  historical:'10-Year Historical Cyber Threat Database',
+};
+
+function expandPanel(type) {
+  const overlay = document.getElementById('expand-overlay');
+  const title   = document.getElementById('expand-modal-title');
+  const body    = document.getElementById('expand-body');
+  title.textContent = EXPAND_TITLES[type] || type;
+  body.innerHTML = '';
+
+  if (type === 'top10') {
+    body.style.padding = '20px 24px';
+    const rows = allThreats.length ? (() => {
+      const counts = {};
+      allThreats.forEach(t=>{ const k=fmtCat(t.category); counts[k]=(counts[k]||0)+1; });
+      return Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,20);
+    })() : [];
+    const max = rows[0]?.[1]||1;
+    body.innerHTML = `<div style="max-width:700px;margin:0 auto;">` +
+      rows.map(([name,count],i)=>`<div class="top10-row" style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <span class="top10-rank" style="width:22px;font-size:12px;">${i+1}</span>
+        <span class="top10-name" style="font-size:14px;">${name}</span>
+        <div class="top10-bar-wrap" style="width:200px;">
+          <div class="top10-bar-track"><div class="top10-bar-fill" style="width:${(count/max*100).toFixed(0)}%"></div></div>
+        </div>
+        <span class="top10-count" style="font-size:14px;width:36px;">${count}</span>
+      </div>`).join('') + '</div>';
+
+  } else if (type === 'feed') {
+    body.innerHTML = `<div style="max-width:800px;margin:0 auto;">
+      <div style="display:flex;gap:10px;margin-bottom:14px;">
+        <input class="rdr-search" type="text" placeholder="Search threats, CVEs…" oninput="document.querySelectorAll('.exp-row').forEach(r=>{const q=this.value.toLowerCase();r.style.display=(r.dataset.name.includes(q)||r.dataset.cve.includes(q))?'':'none';})" style="flex:1;">
+      </div>
+      <table class="rdr-tbl" style="width:100%;">
+        <thead><tr><th>Sev</th><th>Threat</th><th>CVE</th><th>CVSS</th><th>Intel</th></tr></thead>
+        <tbody>${allThreats.map(t=>`<tr class="exp-row" data-name="${(t.threat_name||'').toLowerCase()}" data-cve="${(t.cve_id||'').toLowerCase()}">
+          <td>${sevBadge(t.severity)}</td><td style="color:rgba(255,255,255,0.85);font-size:12px;">${t.threat_name||'—'}</td>
+          <td style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.45);">${t.cve_id||'—'}</td>
+          <td style="font-family:monospace;font-size:12px;">${parseFloat(t.cvss_score||0).toFixed(1)}</td>
+          <td>${t.article_link?`<a href="intel/article.html?slug=${t.article_link.split('/').pop()}" class="rdr-link">Brief →</a>`:'<span class="rdr-pending">Pending</span>'}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+
+  } else if (type === 'vulndist') {
+    body.innerHTML = '<div style="max-width:900px;margin:0 auto;height:400px;"><canvas id="chart-vulndist-exp"></canvas></div>';
+    requestAnimationFrame(()=>{
+      new Chart(document.getElementById('chart-vulndist-exp'),{
+        type:'line',
+        data:{ labels:VULN_DIST.labels, datasets:[
+          {label:'Critical',data:VULN_DIST.critical,borderColor:'#ff3b3b',backgroundColor:'rgba(255,59,59,0.12)',fill:true,tension:.35,pointRadius:4,pointBackgroundColor:'#ff3b3b'},
+          {label:'High',    data:VULN_DIST.high,    borderColor:'#ff8c00',backgroundColor:'rgba(255,140,0,0.08)',fill:true,tension:.35,pointRadius:4,pointBackgroundColor:'#ff8c00'},
+          {label:'Med/Low', data:VULN_DIST.medlow,  borderColor:'#00d4ff',backgroundColor:'rgba(0,212,255,0.06)',fill:true,tension:.35,pointRadius:4,pointBackgroundColor:'#00d4ff'},
+        ]},
+        options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{labels:{color:'rgba(255,255,255,0.6)',font:{size:12}}}},scales:{x:{ticks:{color:'rgba(255,255,255,0.5)',font:{size:12}}},y:{ticks:{color:'rgba(255,255,255,0.5)',font:{size:12}},beginAtZero:true}}}
+      });
+    });
+
+  } else if (type === 'kev') {
+    body.innerHTML = `<div style="max-width:900px;margin:0 auto;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <input class="kev-search" type="text" placeholder="Search CVE, vendor, product, vulnerability name…"
+          oninput="document.querySelectorAll('.exp-kev').forEach(el=>{const q=this.value.toLowerCase();el.style.display=el.dataset.q.includes(q)?'':'none';})"
+          style="flex:1;box-sizing:border-box;">
+        <span style="font-size:10px;color:var(--cs-dimmer);white-space:nowrap;">${kevData.length.toLocaleString()} entries${kevLive?' · <span style=\'color:#00ffa3;\'>Live</span>':' · Cached'}</span>
+      </div>
+      ${kevData.map(k=>`<div class="kev-entry exp-kev" data-q="${(k.cve+k.vendor+k.product+k.attack).toLowerCase()}" style="border:1px solid rgba(255,255,255,0.05);border-radius:8px;margin-bottom:8px;">
+        <div class="kev-row-top"><div>
+          <div class="kev-cve" style="font-size:13px;">${k.cve}</div>
+          <div class="kev-vendor" style="font-size:12px;">${k.vendor} — <span style="color:rgba(255,255,255,0.45);">${k.product}</span></div>
+        </div><span class="kev-badge">KEV</span></div>
+        <div class="kev-row-bot">
+          <span class="kev-attack" style="font-size:11px;">${k.attack}</span>
+          <span class="kev-dates" style="font-size:10px;">Added ${k.added} · Due ${k.due}</span>
+        </div></div>`).join('')}
+      </div>`;
+
+  } else if (type === 'heatmap') {
+    body.style.padding = '20px 24px';
+    body.innerHTML = `<div style="max-width:700px;margin:0 auto;">${buildHeatmapHTML(true)}</div>`;
+
+  } else if (type === 'industries') {
+    body.innerHTML = '<div style="max-width:400px;margin:0 auto;height:400px;"><canvas id="chart-industries-exp"></canvas></div>';
+    requestAnimationFrame(()=>{
+      const ctx = document.getElementById('chart-industries-exp');
+      if(ctx) renderIndustriesChart(ctx, 14);
+    });
+
+  } else if (type === 'historical') {
+    body.innerHTML = `<div style="max-width:1000px;margin:0 auto;">
+      <div class="hist-tabs" style="margin-bottom:16px;" id="exp-hist-tabs">
+        <div class="hist-tab active" onclick="expSwitchTab('industry',this)">By Industry</div>
+        <div class="hist-tab" onclick="expSwitchTab('type',this)">By Attack Type</div>
+        <div class="hist-tab" onclick="expSwitchTab('country',this)">By Country</div>
+        <div class="hist-tab" onclick="expSwitchTab('financial',this)">Total Financial Loss</div>
+      </div>
+      <div style="height:300px;margin-bottom:20px;"><canvas id="chart-hist-exp"></canvas></div>
+      <table class="hist-tbl" style="width:100%;font-size:12px;">
+        <thead id="exp-hist-thead"></thead>
+        <tbody id="exp-hist-tbody"></tbody>
+      </table></div>`;
+    requestAnimationFrame(()=>expRenderHistorical('industry'));
+  }
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+let expHistChart = null;
+function expSwitchTab(tab, el) {
+  document.querySelectorAll('#exp-hist-tabs .hist-tab').forEach(t=>t.classList.remove('active'));
+  if(el) el.classList.add('active');
+  expRenderHistorical(tab);
+}
+function expRenderHistorical(tab) {
+  if(expHistChart){expHistChart.destroy();expHistChart=null;}
+  const d=HIST[tab], ctx=document.getElementById('chart-hist-exp');
+  if(!ctx) return;
+  const opts={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'rgba(255,255,255,0.55)',font:{size:11}}},tooltip:{mode:'index',intersect:false}},scales:{x:{ticks:{color:'rgba(255,255,255,0.45)',font:{size:11}}},y:{ticks:{color:'rgba(255,255,255,0.45)',font:{size:11}},beginAtZero:true}}};
+  if(tab==='industry') expHistChart=new Chart(ctx,{type:'line',data:{labels:d.labels,datasets:d.datasets.map(ds=>({label:ds.label,data:ds.data,borderColor:ds.color,backgroundColor:'transparent',tension:.3,pointRadius:3,borderWidth:2}))},options:opts});
+  else if(tab==='type') expHistChart=new Chart(ctx,{type:'bar',data:{labels:d.labels,datasets:[{data:d.data,backgroundColor:'rgba(0,212,255,0.6)',borderRadius:4}]},options:{...opts,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw.toLocaleString()} incidents`}}}}});
+  else if(tab==='country') expHistChart=new Chart(ctx,{type:'bar',data:{labels:d.labels,datasets:[{data:d.data,backgroundColor:d.data.map((_,i)=>`rgba(0,212,255,${0.85-i*0.06})`),borderRadius:4}]},options:{...opts,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.raw.toLocaleString()} incidents`}}}}});
+  else if(tab==='financial') expHistChart=new Chart(ctx,{type:'line',data:{labels:d.labels,datasets:[{label:'Global Loss ($B)',data:d.data,borderColor:'#ffd700',backgroundColor:'rgba(255,215,0,0.10)',fill:true,tension:.35,pointRadius:4,pointBackgroundColor:'#ffd700',borderWidth:2}]},options:{...opts,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'rgba(255,255,255,0.45)'}},y:{ticks:{color:'rgba(255,255,255,0.45)',callback:v=>'$'+v+'B'},beginAtZero:true}}}});
+  document.getElementById('exp-hist-thead').innerHTML='<tr>'+d.tableHead.map(h=>`<th>${h}</th>`).join('')+'</tr>';
+  document.getElementById('exp-hist-tbody').innerHTML=d.tableRows.map(r=>'<tr>'+r.map((c,i)=>`<td${i===r.length-1?' style="color:var(--cs-cyan);font-weight:700;"':''}>${c}</td>`).join('')+'</tr>').join('');
+}
+
+function closeExpand() {
+  document.getElementById('expand-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  if(expHistChart){expHistChart.destroy();expHistChart=null;}
+}
+
+document.getElementById('expand-overlay').addEventListener('click', e => {
+  if(e.target===e.currentTarget) closeExpand();
+});
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeExpand(); });
+
+/* ════════════════════════════════════════════════
+   LOAD & AUTH
+════════════════════════════════════════════════ */
+async function loadRadar(user) {
+  currentUser = user;
+  const isSub = !!user;
+  try {
+    const data = await CS.Auth.apiFetch('/api/content/radar?limit=500');
+    allThreats = data.data || [];
+    updateStats(allThreats, data.meta?.total, data.meta?.breakdown);
+    renderTop10(allThreats);
+    renderFeed(allThreats, isSub);
+    renderHeatmap(allThreats);
+    renderIndustries(allThreats);
+  } catch(e) {
+    console.error('Radar load error:',e);
+    document.getElementById('radar-body').innerHTML =
+      '<tr><td colspan="4" class="rdr-empty">Content temporarily unavailable.</td></tr>';
+  }
+}
+
+function handleGuest() {
+  document.getElementById('radar-body').innerHTML = `
+    <tr><td colspan="4" class="rdr-empty">
+      <div style="margin-bottom:12px;">Sign in to view the live threat radar.</div>
+      <a href="#" class="btn btn-primary btn-sm" onclick="CS.Auth.showLoginModal();return false;">Sign In Free</a>
+    </td></tr>`;
+}
+
+/* ════════════════════════════════════════════════
+   WIRE UP
+════════════════════════════════════════════════ */
+document.getElementById('severity-filter').addEventListener('change', filterFeed);
+document.getElementById('threat-search').addEventListener('input', filterFeed);
+document.addEventListener('cs:login', e => loadRadar(e.detail));
+document.addEventListener('cs:guest', () => handleGuest());
+setInterval(() => { if(currentUser) loadRadar(currentUser); }, 15*60*1000);
+window.addEventListener('resize', () => {
+  syncRadarCanvas();
+  if(charts.vulnDist) charts.vulnDist.resize();
+});
+
+// Static panels (no auth needed)
+loadCISAKEV();
+renderVulnDist();
+renderHistorical('industry');
+renderHeatmap();
+renderIndustries();
+initMap();
 </script>
 </body>
 </html>
