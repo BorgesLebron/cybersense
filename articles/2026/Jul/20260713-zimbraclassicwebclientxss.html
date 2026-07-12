@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Critical Zimbra Classic Web Client Vulnerability Enables Malicious Script Execution in Authenticated Email Sessions</title>
+<meta property="og:title" content="Critical Zimbra Classic Web Client Vulnerability Enables Malicious Script Execution in Authenticated Email Sessions"/>
+<meta property="og:description" content="A critical cross-site scripting vulnerability in Zimbra's Classic Web Client has been publicly disclosed and patched, presenting an immediate and material risk to enterprise, government, and institutional organizations operating on-premises Zimbra email infrastructure"/>
+<meta property="og:image" content="https://cybersense.solutions/banners/zimbraclassicwebclientxss.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Jul/20260713-zimbraclassicwebclientxss.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Critical Zimbra Classic Web Client Vulnerability E…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Critical Zimbra Classic Web Client Vulnerability Enables Malicious Script Execution in Authenticated Email Sessions</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">Zimbra</span>
+      <span class="tag-badge">Cross-Site Scripting</span>
+      <span class="tag-badge">XSS</span>
+      <span class="tag-badge">Email Security</span>
+      <span class="tag-badge">Session Hijacking</span>
+      <span class="tag-badge">Enterprise Collaboration</span>
+      <span class="tag-badge">Patch Management</span>
+      <span class="tag-badge">CWE-79</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-critical"><strong>Severity:</strong> Critical</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: July 13, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/zimbraclassicwebclientxss.png" alt="Critical Zimbra Classic Web Client Vulnerability Enables Malicious Script Execution in Authenticated Email Sessions — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">A critical cross-site scripting vulnerability in Zimbra's Classic Web Client has been publicly disclosed and patched, presenting an immediate and material risk to enterprise, government, and institutional organizations operating on-premises Zimbra email infrastructure. The flaw permits threat actors to inject and execute malicious scripts within authenticated user sessions — potentially through nothing more than a crafted email that a recipient previews or opens — without requiring system-level access or elevated privileges. Successful exploitation could enable full mailbox compromise, session token theft, unauthorized mail rule manipulation, and lateral movement into broader organizational systems.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">Zimbra has issued an urgent advisory and confirmed patch availability, but organizations without mature patch management cadences for collaboration infrastructure face an actionable and indefinite exposure window. Threat intelligence platforms have flagged active interest in the vulnerability class, and exploit-in-the-wild status remains under monitoring as of publication.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> The single most important action any affected organization can take is immediate patch application to all Zimbra Classic Web Client instances across the full environment, including subsidiary and managed service provider-hosted deployments.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> A critical-severity cross-site scripting flaw in the Zimbra Classic Web Client allows threat actors to inject and execute malicious scripts within authenticated user sessions via specially crafted email messages, enabling potential full mailbox compromise, credential theft, and lateral movement across enterprise email environments without requiring direct system-level exploitation or elevated user interaction beyond routine mail access.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Zimbra publicly disclosed a critical-severity cross-site scripting vulnerability affecting its Classic Web Client interface and issued an urgent advisory directing customers to apply available patches without delay. The disclosure received amplification from BleepingComputer, Security Affairs, The Hacker News, and threat intelligence aggregators including Offseq Radar — a convergence reflecting both the technical severity of the flaw and the concentrated risk it presents to Zimbra's globally distributed customer base.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability resides in the rendering engine of the Classic Web Client, the legacy browser-based interface through which many organizations access Zimbra Collaboration Suite functionality. At its core, the flaw represents a failure in input sanitization: malicious script content embedded within a specially crafted email message is processed and rendered by the Classic Web Client in a manner that permits execution within the context of an authenticated user's active browser session. This behavior defines a cross-site scripting vulnerability, classified under CWE-79 (Improper Neutralization of Input During Web Page Generation), and it is precisely this session-context execution that elevates the risk from a theoretical web application flaw to an operationally consequential enterprise threat.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The attack pathway requires no system-level credentials, no network-layer intrusion, and no privilege escalation. A threat actor need only deliver a crafted email to a Zimbra user. When that user previews or opens the message through the Classic Web Client on an unpatched instance, the embedded payload executes within the trust boundary of the authenticated session. From that position, a threat actor may be able to harvest session cookies or authentication tokens, redirect the user's browser, create or modify mail forwarding rules, exfiltrate correspondence and attachments, or establish persistent access mechanisms — all operating within the permissions already granted to the legitimate mailbox owner.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The classification of the flaw as stored versus reflected XSS remains pending confirmation against the official Zimbra security bulletin and CVE advisory record. The distinction carries meaningful operational weight: stored XSS implies that malicious content persists within the mail environment and could execute across multiple sessions or users without repeated delivery, while reflected XSS requires active triggering per session. Either classification supports the CRITICAL severity rating given the delivery mechanism and the sensitivity of the target environment.
+
+Zimbra confirmed patch availability at the time of disclosure. No equivalent workaround has been confirmed as a sufficient substitute for patch application. The precise disclosure date, CVE assignment, and numerical CVSS score remain subject to confirmation against the official Zimbra security bulletin and NVD record. Offseq Radar's threat intelligence profiling flagged active threat actor interest in the vulnerability class; exploit-in-the-wild confirmation as of this publication date remains under active monitoring.
+
+Historically, Zimbra infrastructure has been a recurring focus of targeted exploitation campaigns. Documented activity between 2023 and 2025 — attributed to both financially motivated cybercriminal actors and nation-state-linked groups — demonstrated that Zimbra vulnerabilities, once disclosed, tend to attract rapid and operationally sophisticated exploitation attempts, particularly against government, defense, non-governmental organization, and critical infrastructure targets across Europe, Asia-Pacific, and North America. That documented pattern of post-disclosure exploitation acceleration provides material context for the urgency characterizing this advisory.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">For Security Operations and Incident Response Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">SOC analysts and incident responders face an immediate detection challenge: session-layer compromise via XSS is inherently difficult to distinguish from legitimate user activity at the network and endpoint level. A threat actor operating within an authenticated session inherits the visibility and permissions of the legitimate user, making behavioral anomaly detection the primary — and often insufficient — defensive layer in the absence of patching. Teams must recalibrate monitoring posture now, not after a confirmed exploitation event.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For IT Infrastructure and Email Platform Owners</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">System administrators and email platform owners bear direct operational accountability for patch deployment timelines. The Classic Web Client's continued presence in production environments — often as a de facto fallback or default configuration rather than an actively managed architectural choice — creates exposure that patch governance programs have historically underweighted relative to endpoint and operating system patching priorities. This disclosure is a direct challenge to that prioritization framework.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For Executive and Strategic Leadership</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Mailbox-level session compromise is a high-fidelity precursor to business email compromise, executive impersonation, wire fraud, and strategic intelligence collection. Threat actors with access to an authenticated executive mailbox session do not need to break encryption or defeat endpoint controls to read sensitive communications, manipulate financial approval workflows, or redirect correspondence. The attack surface here is the institutional trust embedded in email communication itself.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (Days to Weeks):</strong> Any user accessing the Zimbra Classic Web Client on an unpatched instance is an active exploitation candidate from the moment a crafted email arrives in their mailbox. This is not a risk requiring adversary sophistication — delivery requires only that a threat actor transmit a specifically structured email via standard SMTP. Organizations cannot rely on user behavior controls, spam filtering, or email gateway inspection alone to neutralize this risk, particularly given uncertainty around whether current gateway configurations inspect for XSS payload delivery within MIME-structured message content. Patch deployment is the only operationally complete defensive response. Security operations centers should immediately establish a heightened monitoring posture for Zimbra session anomalies: unexpected mail forwarding rule creation or modification, anomalous changes to sent items or auto-reply configurations, session tokens exhibiting geographic or temporal inconsistencies, and concurrent authenticated sessions from divergent IP address spaces. Each of these behavioral indicators warrants investigation as a potential exploitation artifact, pending confirmed patch validation across the environment.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short-Term (Weeks to Months):</strong> Complete Zimbra instance inventory is a prerequisite for confident patch deployment. Many organizations carry shadow or departmental Zimbra installations, legacy configurations maintained for business continuity purposes, and MSP-managed deployments that fall outside standard asset management visibility. Incomplete inventory at this stage directly correlates with incomplete patch coverage and residual exposure. Web application firewall rulesets should be reviewed and updated to extend XSS signature coverage to Zimbra Classic Web Client-specific URIs and input parameters. This should be treated as a risk-reduction measure in parallel with patching — not as an alternative to it. WAF coverage for application-layer XSS is inherently incomplete and bypassable, but it provides a meaningful detection and partial mitigation layer during the patch deployment window. SIEM correlation rules targeting Zimbra authentication events, session lifecycle anomalies, and mail server access logs require calibration against current threat-specific indicators. Third-party Zimbra hosting providers should receive formal written requests for documented patch confirmation, with contractual SLA provisions for critical-severity security patching cited as the applicable obligation framework where relevant.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Long-Term (Months to Years):</strong> This disclosure provides a concrete forcing function for organizations to evaluate migration pathways away from the Classic Web Client interface. Where the Classic Web Client is retained for operational necessity, it should exist within a formally documented risk acceptance and management framework rather than as an unexamined legacy configuration. Organizations without a defined SLA for critical-severity vulnerability remediation in collaboration infrastructure should treat this event as the rationale for establishing one. A tabletop exercise scenario centered on mailbox session compromise via crafted email delivery would provide meaningful readiness validation for incident response teams in advance of any potential exploitation event.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul><li>1 - Apply the Zimbra-issued patch to all Classic Web Client instances as the single highest-priority action. If direct patch deployment capability is not internally available, escalate to your managed service provider immediately and obtain written confirmation of patch deployment with a documented timestamp. Do not accept verbal assurances.</li>
+        <li>2 - Notify end users that they should treat unexpected email behaviors — including unfamiliar sent items, altered mail rules, or unexpected session logouts — as reportable anomalies during this period.</li>
+        <li>3 - If the Classic Web Client can be temporarily disabled in favor of the modern Zimbra interface or an alternative access method without significant operational disruption, this should be considered as an interim exposure reduction measure while patch deployment is confirmed.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#fbbf24;">⬤ Intermediate Maturity Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with dedicated security functions, SIEM coverage, and structured incident response capability.</p>
+      <ul><li>1 - In addition to immediate patch deployment, conduct a full inventory audit of all Zimbra instances within the environment, explicitly including subsidiary organizations, departmental deployments, and any MSP-hosted instances. Update WAF rulesets with XSS signatures specific to Zimbra Classic Web Client endpoints.</li>
+        <li>2 - Brief SOC analysts on session-layer compromise indicators relevant to Zimbra environments and adjust SIEM correlation rules accordingly. Formally verify patch status from all third-party Zimbra hosting providers in writing.</li>
+        <li>3 - Review mail server access logs for retrospective indicators of anomalous session activity that may suggest pre-patch exploitation attempts.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#f87171;">⬤ Advanced Institutional Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with mature security programs, threat intelligence capacity, and advanced monitoring capability.</p>
+      <ul><li>1 - Execute all Baseline and Intermediate actions at accelerated cadence. Integrate Zimbra's XSS vulnerability class into current threat intelligence tracking workflows and cross-reference against known threat group targeting patterns relevant to your sector. Conduct a retrospective hunt across Zimbra session and authentication logs for indicators consistent with session hijacking, unauthorized mail rule manipulation, or token theft activity predating patch application.</li>
+        <li>2 - Evaluate whether the Classic Web Client's continued presence in your environment is architecturally justified or represents an unmanaged legacy risk appropriate for formal deprecation planning. Initiate a tabletop exercise within thirty days to validate incident response procedures for mailbox session compromise scenarios.</li>
+        <li>3 - Ensure that critical-severity patching SLAs for collaboration infrastructure are formally defined, documented, and operationally enforced within the vulnerability management program.</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The Zimbra Classic Web Client vulnerability is a precise illustration of a risk pattern that institutional security programs have historically underweighted: the intersection of legacy infrastructure retention, collaboration platform patch governance gaps, and an attack delivery mechanism so embedded in routine organizational behavior that it requires no exceptional user error to succeed. Receiving an email is not a mistake. Previewing a message is not negligence. The risk resides in the unpatched rendering layer that processes what arrives — and that is entirely within organizational control to address.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Bridging the awareness gap between technical disclosure and institutional action is the operative challenge this vulnerability presents. Organizations that patch promptly will close the exposure window. Those that do not will find that the question shifts from whether exploitation is possible to whether it has already occurred. The email inbox is not simply a communication tool — it is a boundary layer of institutional trust, and defending it demands the same discipline applied to every other critical system in the enterprise.</p>
+    <div class="pull-quote">"Patch first. Verify completely. Monitor continuously."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">Pending confirmation against official Zimbra security bulletin and NVD record; CVE assignment expected upon NVD processing of Zimbra advisory</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">Critical severity; numerical score expected within the 9.0–10.0 range — confirm against official Zimbra advisory and NVD record prior to publication</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">Cross-Site Scripting (XSS); CWE-79 — Improper Neutralization of Input During Web Page Generation; stored versus reflected XSS subclassification pending confirmation against official CVE advisory record</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">July 2026 — precise disclosure date to be confirmed against Zimbra official security bulletin</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Active threat actor interest in vulnerability class flagged by Offseq Radar threat intelligence platform; exploit-in-the-wild status not confirmed as of publication date; active monitoring ongoing</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Crafted email message delivery via SMTP; XSS payload injection through Zimbra Classic Web Client rendering engine; authenticated session-context script execution enabling session cookie theft, authentication token hijacking, session replay, and unauthorized mail configuration manipulation</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Linux-based on-premises server infrastructure hosting Zimbra Collaboration Suite; browser-based client access environments — cross-browser scope to be confirmed against official advisory</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Zimbra Classic Web Client — Zimbra Collaboration Suite (Classic interface); affected version range to be confirmed against official Zimbra security bulletin</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Enterprise on-premises email infrastructure; government and public sector Zimbra deployments; educational institution deployments; managed service provider-hosted multi-tenant Zimbra environments</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">Open from vulnerability introduction through verified patch deployment; no confirmed equivalent workaround; organizations without defined critical-severity patch management SLAs face indefinite open exposure; retrospective session log review recommended to assess potential pre-patch exploitation activity</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
