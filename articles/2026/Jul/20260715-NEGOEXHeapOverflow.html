@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Windows NEGOEX Authentication Protocol Heap Overflow: Unauthenticated Remote Code Execution at the Pre-Authentication Boundary</title>
+<meta property="og:title" content="Windows NEGOEX Authentication Protocol Heap Overflow: Unauthenticated Remote Code Execution at the Pre-Authentication Boundary"/>
+<meta property="og:description" content="A critical heap-based buffer overflow vulnerability in the Windows NEGOEX security extension — designated CVE-2025-47981 and scored 9.8 (Critical) under the Common Vulnerability Scoring System — exposes enterprise authentication infrastructure to unauthenticated, pre-authentication remote code execution across a broad range of Microsoft Windows deployments. Disclosed through Microsoft's July 2025 Patch Tuesday release cycle, the vulnerability requires no valid credentials, no user interaction, and no pre-established session to exploit, placing every unpatched Windows host participating in authentication negotiation within potential attack range."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/NEGOEXHeapOverflow.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Jul/20260715-NEGOEXHeapOverflow.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Windows NEGOEX Authentication Protocol Heap Overfl…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Windows NEGOEX Authentication Protocol Heap Overflow: Unauthenticated Remote Code Execution at the Pre-Authentication Boundary</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">NEGOEX</span>
+      <span class="tag-badge">heap-overflow</span>
+      <span class="tag-badge">pre-authentication RCE</span>
+      <span class="tag-badge">Windows authentication</span>
+      <span class="tag-badge">Active Directory</span>
+      <span class="tag-badge">Patch Tuesday</span>
+      <span class="tag-badge">CWE-122</span>
+      <span class="tag-badge">unauthenticated exploit</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-critical"><strong>Severity:</strong> Critical</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: July 15, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/NEGOEXHeapOverflow.png" alt="Windows NEGOEX Authentication Protocol Heap Overflow: Unauthenticated Remote Code Execution at the Pre-Authentication Boundary — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">A critical heap-based buffer overflow vulnerability in the Windows NEGOEX security extension — designated CVE-2025-47981 and scored 9.8 (Critical) under the Common Vulnerability Scoring System — exposes enterprise authentication infrastructure to unauthenticated, pre-authentication remote code execution across a broad range of Microsoft Windows deployments. Disclosed through Microsoft's July 2025 Patch Tuesday release cycle, the vulnerability requires no valid credentials, no user interaction, and no pre-established session to exploit, placing every unpatched Windows host participating in authentication negotiation within potential attack range.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">The flaw's position at the pre-authentication boundary means that conventional identity-perimeter controls — including credential validation, multi-factor authentication, and session-based monitoring — provide no protective value against an exploit targeting this layer. Organizations that have not yet applied the corresponding security update as of this publication date have sustained a potential exposure window approaching twelve months.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> The single most actionable step available to any affected organization remains immediate patch deployment, with domain controllers and authentication infrastructure designated as the highest-priority remediation targets.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> CVE-2025-47981 is a pre-authentication, zero-click heap overflow in the Windows NEGOEX security negotiation extension that enables a remote, unauthenticated threat actor to achieve arbitrary code execution at the authentication layer — a condition that bypasses conventional identity-perimeter controls entirely and threatens the integrity of enterprise authentication infrastructure at its foundational tier.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2025-47981 was assigned and publicly disclosed through Microsoft's July 2025 Patch Tuesday security update release cycle, the coordinated monthly mechanism through which Microsoft publishes security advisories and corresponding patches for vulnerabilities identified across its product portfolio. The vulnerability is formally catalogued under CWE-122 — MITRE's Common Weakness Enumeration classification for heap-based buffer overflow conditions — a root cause category with well-established exploitation precedent across enterprise software. CWE-122 describes a memory management error in which an operation writes beyond the boundary of a dynamically allocated heap buffer, creating conditions under which an external actor may influence program execution by manipulating the resulting memory corruption. The NVD/NIST record for CVE-2025-47981 provides the authoritative CVSS base score of 9.8 (Critical), with a vector string reflecting network accessibility, low attack complexity, no required privileges, and no required user interaction — a combination that places this vulnerability among the most severe in Microsoft's recent disclosure history by established scoring criteria.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">NEGOEX — the NEGOtiation EXtension — is a Microsoft extension to the SPNEGO (Simple and Protected GSSAPI Negotiation Mechanism) protocol that functions within the Windows Security Support Provider Interface (SSPI). Its role is to negotiate which security mechanisms — Kerberos or NTLM, for example — will govern an authentication exchange before that authentication takes place. NEGOEX operates at the handshake layer: the trust-negotiation phase that precedes any identity verification. The vulnerability arises from how NEGOEX processes authentication token data during this negotiation phase. When a remote system initiates an authentication negotiation, NEGOEX allocates heap memory to receive and process the incoming token. The flaw manifests when malformed or oversized token data causes a write operation to exceed the allocated buffer boundary. Because this processing occurs before any credential validation is performed, an unauthenticated threat actor can trigger the overflow by sending a crafted negotiation payload to any Windows host listening for authentication connections. No account, no password, no prior access, and no user action on the target system are required. This is the defining characteristic of a pre-authentication vulnerability: the attack surface is reachable before the system has any opportunity to evaluate whether the initiating party is authorized. Once heap memory is corrupted, the conditions exist for arbitrary code execution — the ability to run attacker-supplied instructions within the context of the affected authentication process.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability resides within the Windows SSPI layer and the NEGOEX extension specifically — components present across a wide range of Microsoft Windows versions, including both server and workstation editions. Exposure is not limited to dedicated authentication servers. Any Windows host configured to accept authentication negotiations — including domain-joined workstations, file servers, Remote Desktop hosts, and SMB-enabled endpoints — falls within the potential attack surface. Domain controllers represent the highest-consequence targets given their role as the authoritative center of Active Directory identity infrastructure, but they are not the only targets of concern. The attack vector is confirmed as network-accessible under primary conditions, with network-adjacent access also confirmed. Internet-facing Windows systems — including Remote Desktop Gateway infrastructure and VPN concentrators with Windows back-ends — face elevated exposure where authentication service ports are reachable from untrusted networks.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Microsoft released the security update addressing CVE-2025-47981 during the July 2025 Patch Tuesday cycle, accompanied by advisories covering numerous other vulnerabilities across its product lines. Cisco Talos Intelligence, in its July 2025 Patch Tuesday analysis, contextualized this vulnerability's priority ranking relative to co-released advisories, noting the severity of its attack vector and complexity profile. As of this article's publication date of July 15, 2026, organizations that have not yet applied the corresponding security update remain fully exposed. No confirmed in-the-wild exploitation was reported at the time of initial disclosure. However, the elapsed time since Patch Tuesday publication — combined with the vulnerability's scoring profile and the maturity of heap overflow exploitation tradecraft — substantially elevates the probability that exploitation-capable code exists within advanced threat actor toolsets. Readers should verify current exploitation status and CISA Known Exploited Vulnerabilities (KEV) catalog standing through live intelligence sources prior to finalizing any risk assessment.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">For Security Practitioners &amp; SOC Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Pre-authentication vulnerabilities occupy a categorically distinct risk tier in enterprise security for a reason that is both technically precise and strategically significant: they operate outside the reach of identity controls. When a threat actor can achieve code execution before authentication occurs, the entire defensive architecture premised on credential validation, access policy enforcement, and session monitoring becomes irrelevant to that specific attack chain. The adversary does not need to steal a password, compromise a token, or deceive a user — they need only reach the network port and send a crafted message. This threat class has produced some of the most consequential security events in enterprise computing history. EternalBlue (MS17-010), which drove the WannaCry and NotPetya campaigns, exploited a pre-authentication buffer overflow in the Windows SMB implementation. CVE-2020-0796 (SMBGhost) exposed a comparable pre-authentication code execution condition in SMBv3. CVE-2025-47981 belongs to this lineage — a flaw at the protocol layer where trust begins, rather than where it can be enforced. NEGOEX does not operate at the application layer where most logging and endpoint detection and response (EDR) tools maintain their deepest visibility. It operates beneath that layer, within the authentication negotiation infrastructure that applications depend upon but rarely monitor directly. A compromise at this tier provides a threat actor with an execution foothold in a process context — potentially including the Local Security Authority Subsystem Service (lsass.exe) or associated security provider processes — that is both privileged and, in many environments, inadequately instrumented for behavioral anomaly detection. In Active Directory environments, subverting the authentication negotiation layer could provide initial access that cascades toward domain-wide compromise without triggering conventional identity-based alerting.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For Security Leaders &amp; CISOs</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">The operational significance of &quot;no user interaction required&quot; is material to defensive planning. Phishing-dependent threats require an adversary to successfully deceive a human actor — a condition that security awareness programs, email filtering, and behavioral analysis tools are designed to complicate. CVE-2025-47981 requires no such opportunity. Any Windows host with authentication service ports reachable from an adversary-controlled network position is a potential target, regardless of user security awareness posture. This shifts the defensive burden entirely to infrastructure controls: patch management, network segmentation, and detection engineering. The CVSS attack complexity rating, interpreted alongside Cisco Talos analysis, indicates that while developing a reliable exploit requires meaningful technical capability, the well-understood nature of heap overflow exploitation mechanics in Windows service processes means that the timeline from public vulnerability disclosure to weaponized exploit availability may be substantially shorter than organizations with extended patch cycles can safely accommodate. CWE-122 heap-based buffer overflows are among the most extensively studied and operationalized vulnerability classes in offensive security research. Unlike categories requiring exotic exploitation primitives or highly specific environmental conditions, heap overflows in Windows service processes have established exploitation frameworks, documented heap layout manipulation techniques, and decades of research precedent. Sophisticated threat actors — including those operating at the nation-state level — maintain the technical depth to develop reliable exploits against this root cause class, particularly when the target is a high-value, broadly deployed component such as the Windows authentication stack.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For Policy, Risk &amp; Compliance Officers</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Several organizational categories face compounded risk. Operational Technology (OT) and Industrial Control System (ICS) environments that incorporate Windows nodes for authentication or management functions frequently operate under extended or constrained patch cycles due to availability requirements and vendor certification dependencies. Managed Service Provider environments introduce multi-tenant blast radius concerns, where a single unpatched infrastructure node could serve as an initial access point into multiple client environments. Organizations operating under FISMA, FedRAMP, or CMMC frameworks face defined patch compliance timelines, and CISA KEV catalog inclusion — if exploitation is confirmed — would impose binding remediation deadlines under applicable federal directives.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (Days to Weeks):</strong> The primary operational imperative is unambiguous: all in-scope Windows systems must receive Microsoft's security update for CVE-2025-47981. The sequencing of that deployment, however, carries strategic weight. Domain controllers are Tier-0 assets — the authoritative source of identity for Active Directory environments — and should receive patch deployment before any other asset category. Authentication servers, certificate authority hosts, and federated identity infrastructure follow in the immediate priority tier. Internet-facing Windows endpoints, including Remote Desktop Gateway servers, VPN back-end hosts, and SMB-exposed file servers, represent the highest external attack surface and must be addressed before general workstation rollout in environments with resource-constrained deployment capacity. Patch deployment validation through SCCM, Intune, WSUS, or equivalent patch management telemetry is a distinct operational step from initiating the deployment workflow. Unconfirmed deployments must not be treated as completed remediations. Organizations that cannot achieve immediate full patch deployment must treat the intervening period as an active risk management problem rather than an acceptable holding pattern. The twelve-month elapsed window since original disclosure substantially increases the probability that exploitation-capable code exists within advanced threat actor toolsets. During the patch gap, two classes of compensating controls warrant immediate prioritization. First, network-layer restrictions should limit NEGOEX-capable traffic to explicitly authorized authentication paths. Restricting inbound access to TCP port 445 (SMB), TCP port 135 (MSRPC endpoint mapper), and TCP port 139 (NetBIOS Session Service) at both perimeter and internal segment boundaries reduces the reachable attack surface. In environments with flat network architectures, implementing these restrictions may require emergency policy changes that carry their own operational risk — tradeoffs that require explicit leadership awareness and authorization. Second, enhanced logging on authentication service processes should be activated without delay. Anomalies in lsass.exe and associated security provider processes that would otherwise be invisible under baseline logging configurations may surface pre-exploitation reconnaissance or active exploitation attempts when elevated monitoring is in place.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short-Term (Weeks to Months):</strong> SOC teams should prioritize three detection domains. At the network layer, IDS/IPS signatures targeting malformed NEGOEX negotiation token payloads represent the earliest feasible point in the kill chain for detection. At the host layer, behavioral indicators — including heap spray patterns, unexpected memory operations in lsass.exe or secur32.dll, and authentication process crashes or restarts — warrant immediate investigation. At the log analytics layer, Windows Security Event IDs 4625 (failed logon), 4768 (Kerberos TGT request), and 4771 (Kerberos pre-authentication failure) provide correlation anchors for authentication anomaly triage. SOC Prime has published detection logic aligned to this vulnerability that can accelerate SIEM rule deployment for organizations with existing platform integrations. Security operations teams with capacity for proactive threat hunting should develop hunt hypotheses around the following: unauthenticated inbound connections to authentication service ports that terminate without a completed authentication event; authentication service process anomalies — including unexpected child process spawning or DLL loading — in the window preceding lateral movement indicators; and clusters of failed pre-authentication events from single source addresses against multiple domain-joined hosts. Where log retention permits, reconstructing authentication service process timelines for the period since July 2025 Patch Tuesday may surface historical exploitation attempts that preceded patch deployment.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Long-Term (Months to Years):</strong> Managed Service Providers and cloud-hosted Windows environment operators carry notification obligations to client organizations regarding unpatched exposure status. Supply chain authentication dependency mapping — identifying which business-critical applications or services authenticate against potentially unpatched Windows infrastructure — should proceed as a parallel workstream to patch deployment, not as a deferred post-remediation activity. Within a ninety-day window, organizations should conduct a formal review of patch cycle velocity specifically for authentication-tier infrastructure — a category that frequently receives lower patch prioritization than endpoints despite representing higher-consequence compromise targets. Use this assessment to identify process gaps and implement governance changes that reduce time-to-patch for Tier-0 authentication assets in future critical vulnerability cycles. Evaluate the feasibility of reducing organizational NTLM dependency in favor of enforced Kerberos with armoring enabled, consistent with Microsoft's ongoing authentication modernization guidance. This architectural shift reduces the attack surface associated with NTLM-reliant negotiation paths that NEGOEX mediates. Incorporate a pre-authentication compromise scenario — modeled on CVE-2025-47981's attack chain — into your next tabletop exercise or purple team engagement. Establish monitoring through threat intelligence feeds for public proof-of-concept exploit code release, and document an escalation protocol for response posture adjustment if active exploitation is confirmed. Verify CISA KEV catalog status through official channels and ensure that any binding remediation timelines applicable to your regulatory environment are tracked and met.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul><li>1 - Apply the Microsoft security update for CVE-2025-47981 through Windows Update or your organization's existing patch mechanism. Confirm successful application by reviewing installed update history on critical systems; automatic update enablement alone does not constitute verification. Domain controllers and any internet-facing Windows servers should be patched before workstations if simultaneous deployment is not feasible.</li>
+        <li>2 - Confirm with your internet service provider or firewall administrator that TCP ports 445, 135, and 139 are not reachable from the public internet on your organizational IP ranges.</li>
+        <li>3 - If you use a managed IT provider, request written confirmation that CVE-2025-47981 has been patched across all managed systems within your environment.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#fbbf24;">⬤ Intermediate Maturity Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with dedicated security functions, SIEM coverage, and structured incident response capability.</p>
+      <ul><li>1 - Deploy SIEM detection rules aligned to SOC Prime and community-published indicator sets specific to CVE-2025-47981. Conduct a retrospective threat hunt across authentication logs for the period since July 2025 Patch Tuesday, focusing on the anomaly indicators described in the Operational Implications section.</li>
+        <li>2 - Audit all external network exposure of Windows authentication services and formally close any internet-facing authentication endpoints not required for documented business purposes. Review network segmentation between authentication infrastructure and general-use segments, and implement or strengthen internal firewall policy to enforce separation where it does not currently exist.</li>
+        <li>3 - Establish a patch deployment validation report confirming successful update application across all domain controllers, authentication servers, and internet-facing Windows hosts. Unconfirmed deployments should be escalated for manual verification before the remediation workstream is considered closed.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#f87171;">⬤ Advanced Institutional Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with mature security programs, threat intelligence capacity, and advanced monitoring capability.</p>
+      <ul><li>1 - Within a ninety-day window, conduct a formal review of patch cycle velocity specifically for authentication-tier infrastructure — a category that frequently receives lower patch prioritization than endpoints despite representing higher-consequence compromise targets. Use this assessment to identify process gaps and implement governance changes that reduce time-to-patch for Tier-0 authentication assets in future critical vulnerability cycles.</li>
+        <li>2 - Evaluate the feasibility of reducing organizational NTLM dependency in favor of enforced Kerberos with armoring enabled, consistent with Microsoft's ongoing authentication modernization guidance. This architectural shift reduces the attack surface associated with NTLM-reliant negotiation paths that NEGOEX mediates. Incorporate a pre-authentication compromise scenario — modeled on CVE-2025-47981's attack chain — into your next tabletop exercise or purple team engagement.</li>
+        <li>3 - Establish monitoring through threat intelligence feeds for public proof-of-concept exploit code release, and document an escalation protocol for response posture adjustment if active exploitation is confirmed. Verify CISA KEV catalog status through official channels and ensure that any binding remediation timelines applicable to your regulatory environment are tracked and met.</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2025-47981 is a precise illustration of why the pre-authentication boundary demands priority treatment in any defensible security architecture. By definition, it is the point at which identity controls have not yet engaged — and a flaw at that boundary defeats the protective logic of the entire authentication layer. This vulnerability arrived with disclosure, advisory guidance, and an actionable patch; the persistence of risk across nearly a year of available remediation reflects a structural challenge that no single patch cycle can resolve. Organizations must recalibrate patch governance to treat authentication infrastructure as the highest-consequence tier in their remediation frameworks — not as infrastructure that can defer to the next maintenance window.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Institutional resilience against pre-authentication threats is not built through awareness alone. It is built through operational discipline, architectural investment in segmentation and protocol modernization, and governance frameworks that protect the foundational tier of the identity stack with the urgency it warrants. The authentication layer is where trust begins. Protecting it is where security must begin as well.</p>
+    <div class="pull-quote">"Bridging the awareness gap — one critical vulnerability at a time."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2025-47981</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">9.8 — Critical
+(Base score sourced from NVD/NIST record; readers should confirm against the live NVD record at time of consumption, as scores remain subject to NVD analysis finalization)</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">CWE-122: Heap-Based Buffer Overflow</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">July 2025 — Microsoft Patch Tuesday Security Update Release Cycle</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">No confirmed in-the-wild exploitation reported at the time of initial Patch Tuesday disclosure. Elevated risk of proof-of-concept development and potential weaponization assessed based on CVSS scoring profile, low attack complexity rating, and elapsed time since public disclosure. Readers are directed to verify current exploitation status against the CISA Known Exploited Vulnerabilities (KEV) catalog and Cisco Talos Intelligence live threat feeds at time of action.</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Network (primary); Network-Adjacent (confirmed); Unauthenticated; No User Interaction Required; Pre-authentication stage exploitation — no valid credentials or established session required</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Microsoft Windows — multiple versions and builds across server and workstation editions
+(Confirm full version scope against the NVD record and Microsoft Security Update Guide at time of patch deployment)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Windows NEGOEX Security Extension; Windows Security Support Provider Interface (SSPI); Windows Authentication Stack (secur32.dll and associated authentication provider components)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Enterprise Active Directory domain environments; Domain Controllers (Tier-0 priority); Authentication servers and federated identity infrastructure; SMB-exposed Windows file and print servers; Internet-facing Remote Desktop Gateway and VPN back-end systems; OT/ICS environments with Windows authentication dependencies; Managed Service Provider multi-tenant Windows infrastructure</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">July 2025 Patch Tuesday (initial disclosure and patch availability) through confirmed organizational patch deployment completion. Organizations unpatched as of July 15, 2026 have sustained a potential exposure window approaching twelve months. Exposure window duration for individual organizations should be calculated against internal patch compliance metrics and validated through patch management telemetry.</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
