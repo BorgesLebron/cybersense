@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | AsyncAPI npm Package Compromise: Pwn Request Attack Injects Credential-Stealing Malware and Miasma RAT into Supply Chain</title>
+<meta property="og:title" content="AsyncAPI npm Package Compromise: Pwn Request Attack Injects Credential-Stealing Malware and Miasma RAT into Supply Chain"/>
+<meta property="og:description" content="The AsyncAPI npm package ecosystem experienced a sophisticated supply chain compromise in July 2026 when threat actors exploited misconfigured GitHub Actions workflows to inject credential-stealing malware and the Miasma Remote Access Trojan directly into published packages consumed by tens of thousands of developers and enterprise build environments worldwide."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/InsideAsyncAPIAttack.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Jul/20260717-InsideAsyncAPIAttack.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">AsyncAPI npm Package Compromise: Pwn Request Attac…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">AsyncAPI npm Package Compromise: Pwn Request Attack Injects Credential-Stealing Malware and Miasma RAT into Supply Chain</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">Supply Chain Attack</span>
+      <span class="tag-badge">GitHub Actions</span>
+      <span class="tag-badge">npm Package Poisoning</span>
+      <span class="tag-badge">Pwn Request</span>
+      <span class="tag-badge">Miasma RAT</span>
+      <span class="tag-badge">CI/CD Security</span>
+      <span class="tag-badge">Credential Theft</span>
+      <span class="tag-badge">Software Compromise</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-critical"><strong>Severity:</strong> Critical</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: July 17, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/InsideAsyncAPIAttack.png" alt="AsyncAPI npm Package Compromise: Pwn Request Attack Injects Credential-Stealing Malware and Miasma RAT into Supply Chain — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">The AsyncAPI npm package ecosystem experienced a sophisticated supply chain compromise in July 2026 when threat actors exploited misconfigured GitHub Actions workflows to inject credential-stealing malware and the Miasma Remote Access Trojan directly into published packages consumed by tens of thousands of developers and enterprise build environments worldwide. The attack vector—a &quot;Pwn Request&quot;—leverages insufficient permission scoping in automated CI/CD pipelines by submitting malicious pull requests to repositories, enabling arbitrary code execution within privileged build contexts and package poisoning at publication time.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">Any organization or developer that installed affected AsyncAPI package versions during the exposure window faces confirmed risk of credential exfiltration from build environments and potential persistent remote compromise of systems that executed the malware payload. This incident exposes a structural vulnerability affecting thousands of open-source repositories employing similar workflow configurations.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> Immediate action required: credential rotation from all affected build environments, integration of Miasma indicators of compromise into detection platforms, and comprehensive audit of GitHub Actions workflows for Pwn Request susceptibility across the enterprise.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> Attackers exploited insufficiently scoped GitHub Actions workflow permissions to execute a Pwn Request attack against the AsyncAPI generator repository, successfully injecting credential-stealing malware and the Miasma RAT into published npm packages, meaning any developer or automated pipeline that installed affected versions during the exposure window experienced confirmed credential exfiltration and potential persistent remote control.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The &quot;Pwn Request&quot; represents a specific class of supply chain attack that exploits GitHub Actions' automation architecture. Unlike traditional dependency confusion or typosquatting attacks, Pwn Request attacks target the trust relationship between repositories and their CI/CD pipelines by submitting pull requests designed to trigger privileged workflows. When a repository's workflow is configured to execute automatically in response to pull requests—particularly using the `pull_request_target` event—it executes with access to repository secrets, authentication tokens, and environment variables, even when triggered by external contributors. Threat actors exploit this design by crafting malicious pull requests that modify workflow configurations or inject code executed during automated build processes.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">In July 2026, attackers submitted a malicious pull request to the AsyncAPI generator repository (`asyncapi/generator`), a critical component of the AsyncAPI tooling ecosystem. AsyncAPI is a specification for describing event-driven and asynchronous APIs; the generator tool transforms AsyncAPI definitions into code, documentation, and deployment artifacts. The tool operates during build processes with access to npm authentication tokens, GitHub credentials, cloud provider API keys, and other sensitive credentials common to development environments. The AsyncAPI repository's GitHub Actions workflow was configured to automatically publish generated npm packages upon successful pull request merge, with insufficient permission scoping. Detection occurred through security research conducted by multiple organizations (Datadog Security Labs, Kodems Security, Aikido Security) monitoring supply chain threats.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The injected malware operated in two distinct functional stages, designed to maximize both immediate intelligence collection and long-term system control. The first stage extracted credentials accessible from the host environment, performing systematic enumeration and exfiltration of npm tokens, GitHub personal access tokens, cloud provider credentials (AWS, Azure, GCP access keys), SSH keys, and environment variables. The second stage deployed the Miasma Remote Access Trojan, a sophisticated RAT enabling arbitrary code execution, file system access, process spawning, and credential store manipulation. Miasma established persistence across system reboots and package updates by embedding itself in system locations resistant to routine software maintenance, enabling undetected interactive access to compromised developer machines and build agents.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Once injected and validated within the AsyncAPI repository's build environment, the malicious code was automatically published to the npm public registry as part of legitimate package releases. The automated publishing workflow executed with full npm registry token permissions, allowing attackers to publish versions bearing authentic AsyncAPI signatures and version numbers. The malware was embedded alongside functional AsyncAPI generation code—a poisoning technique designed to avoid immediate functional detection. The npm registry distributed poisoned package versions to any developer or automated system executing `npm install @asyncapi/generator@[affected-version]` during the exposure window. Given AsyncAPI's adoption in cloud-native, financial services, and event-driven architecture environments, distribution scope was significant, with download metrics indicating tens of thousands of installations spanning North America, Europe, and Asia-Pacific regions during the 48-hour exposure window.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">For Security Practitioners &amp; SOC Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">The Pwn Request attack class has received insufficient defensive priority relative to its operational exploitability and widespread applicability. The attack requires no sophisticated social engineering, zero-day vulnerabilities, or insider access—only understanding of GitHub Actions' permission model and ability to submit a pull request to a vulnerable repository. Thousands of open-source repositories employ `pull_request_target` workflows combined with elevated permissions for automated publishing or deployment. Each represents a potential compromise point. The vulnerability is structural, not incidental. GitHub Actions workflows execute in response to repository events with access to secrets and tokens, and a pull request modifying the workflow definition or executed code can poison the build pipeline itself. Detection of this attack pattern requires integration of Miasma RAT indicators of compromise into endpoint detection and response platforms, SIEM solutions, and network detection systems.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For Security Leaders &amp; CISOs</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">AsyncAPI occupies a specialized, high-value position in enterprise architecture, with the generator operating at build time before runtime execution with access to build environment secrets—cloud credentials, package tokens, internal registry credentials. Compromise of generator code represents compromise of the entire build environment, not merely generated output. This attack pattern—targeting build-time tooling rather than runtime dependencies—signals a methodological shift where adversaries increasingly recognize that build infrastructure contains the highest concentration of credential access. Build agents authenticate to cloud providers, package repositories, secret managers, and source control systems. A single compromised build artifact yields access to an organization's entire technology stack. The AsyncAPI incident is the latest in a series of supply chain compromise incidents redefining threat landscape priorities, with XZ Utils, SolarWinds, 3CX, and now AsyncAPI collectively demonstrating that supply chain attacks have transitioned from rare patterns to operationalized, routine threat activity.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For Policy, Risk &amp; Compliance Officers</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">The AsyncAPI incident creates overlapping incident response, forensic, and regulatory obligations. Credential exfiltration from build environments may constitute reportable data breach depending on jurisdictions and credential type. Organizations in financial services, healthcare, and critical infrastructure sectors face sector-specific reporting obligations. The incident exposes tensions in responsibility distribution across open-source maintainers, platform providers, and consuming organizations, underscoring that supply chain security is a tripartite problem requiring coordinated response. Open-source maintainers operate under resource constraints and cannot reasonably be expected to provide specialized security expertise. GitHub, as platform provider, has not sufficiently hardened the permission model against Pwn Request attacks. Consuming organizations bear responsibility for supply chain verification and must audit repositories they depend on, including CI/CD configurations, and make informed risk decisions.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (Days to Weeks):</strong> Any development environment or CI/CD pipeline that installed affected AsyncAPI npm packages during the exposure window must be treated as confirmed compromised until proven otherwise. This includes developer workstations where `npm install` was executed, automated build agents in GitHub Actions, AWS CodeBuild, Google Cloud Build, Azure Pipelines, Jenkins, GitLab CI/CD, and containerized or on-premises build infrastructure. Every credential, token, and secret accessible from affected environments must be rotated immediately: npm tokens, GitHub PATs, cloud provider access keys, internal artifact repository credentials, SSH keys, and secrets accessible from environment variables. Development machines and build agents should be isolated from network access pending forensic examination. Build agents should be decommissioned and rebuilt rather than remediated in place, given RAT persistence capabilities. Miasma RAT indicators of compromise must be immediately integrated into endpoint detection and response platforms, SIEM solutions, and network detection systems. Artifacts generated by affected build pipelines during the exposure window must be treated as potentially compromised, with rolling back to pre-compromise artifacts and rebuilding from unaffected environments necessary for high-assurance remediation.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short-Term (Weeks to Months):</strong> Conduct retroactive log review across build infrastructure, network perimeter, and endpoints during exposure window to search for anomalous outbound connections from build agents or developer machines, identify process execution anomalies during build phases, correlate published RAT IOCs against network telemetry, and document timeline and scope of RAT command-and-control activity. Audit all GitHub Actions workflows for Pwn Request-susceptible configurations, identifying all `pull_request_target` triggers combined with elevated permissions and flagging workflows with secret or token access from external pull requests. Identify whether artifacts generated by compromised build environments were published, deployed, or distributed downstream, and determine downstream notification obligations. Implement mandatory code review and approval gates on all workflows handling secrets, publish operations, or infrastructure deployment. Enforce least-privilege token and credential scoping: npm publish tokens with package-specific publish-only access, cloud credentials scoped to specific resources and operations, GitHub tokens limited to repository-specific operations, and consideration of time-limited token issuance. Evaluate and pilot package provenance and signing solutions such as Sigstore for code signing and verification, npm provenance attestation for package publication tracking, and container image attestation.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Long-Term (Months to Years):</strong> Establish or update organizational software supply chain security policy with explicit CI/CD pipeline security controls including code review and approval gates on automated publishing workflows, least-privilege credential scoping and time-limited token issuance, SBOM maintenance and dependency verification standards, supply chain incident response and downstream notification procedures, and third-party software assessment and vendor risk management guidelines. Evaluate and implement continuous monitoring for package and dependency anomalies through runtime behavior analysis, dependency vulnerability scanning and policy enforcement, package signature verification and provenance attestation, and integration with software development lifecycle tools. Brief executive leadership and board-level risk committees on supply chain attack trends and organizational exposure, presenting AsyncAPI incident as forcing function for supply chain risk reassessment and discussing second-order consequences for product security, customer trust, and regulatory obligations. Engage with AsyncAPI project governance on long-term security assurance commitments and funding, collaborate with peer organizations on supply chain security best practices, and participate in industry working groups addressing CI/CD pipeline security and package provenance.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul><li>1 - Inventory all systems and build pipelines with installed AsyncAPI packages by cross-referencing package management logs, build pipeline artifacts, and SBOM records</li>
+        <li>2 - Immediately rotate all credentials accessible from affected environments: npm tokens, GitHub PATs, cloud provider keys, SSH keys, and application-layer secrets</li>
+        <li>3 - Isolate affected build agents and developer workstations from network access pending forensic examination and system rebuild</li>
+        <li>4 - Remove affected AsyncAPI package versions from internal artifact registries, mirrors, and caches; document removed versions and identify consumer applications</li>
+        <li>5 - Integrate published Miasma RAT indicators of compromise into antivirus, firewall, and basic network monitoring systems</li>
+        <li>6 - Conduct audit of GitHub Actions workflows for `pull_request_target` triggers and flag for remediation; prioritize workflows with secret or publish access</li>
+        <li>7 - Review and implement approval gates on automated workflows handling secrets or publishing operations before promoting to production CI/CD pipelines</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#fbbf24;">⬤ Intermediate Maturity Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with dedicated security functions, SIEM coverage, and structured incident response capability.</p>
+      <ul><li>1 - Conduct comprehensive forensic analysis across build infrastructure, network perimeter, and endpoint logs during exposure window; correlate anomalies against Miasma RAT IOCs and identify C2 communication patterns</li>
+        <li>2 - Establish incident command structure with cross-functional representation from security operations, engineering, compliance, and executive leadership; define escalation and communication procedures</li>
+        <li>3 - Identify all artifacts generated by compromised build pipelines and assess whether downstream distribution occurred; implement downstream notification process if applicable</li>
+        <li>4 - Implement least-privilege credential scoping across CI/CD infrastructure: npm automation tokens limited to specific package publication, cloud credentials scoped to specific resources, time-limited token issuance (hours, not permanent)</li>
+        <li>5 - Deploy Miasma RAT indicators into SIEM and endpoint detection and response platforms; establish continuous monitoring and alerting for detection of IOC matches</li>
+        <li>6 - Pilot package provenance solutions (Sigstore, npm provenance attestation) in non-critical build pipelines; document implementation processes and consuming organization verification procedures</li>
+        <li>7 - Conduct tabletop exercise simulating supply chain compromise via CI/CD pipeline vector; identify gaps in tooling, processes, and organizational readiness; update incident response procedures</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#f87171;">⬤ Advanced Institutional Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with mature security programs, threat intelligence capacity, and advanced monitoring capability.</p>
+      <ul><li>1 - Implement comprehensive software supply chain security policy with formal governance; establish CI/CD pipeline security controls, SBOM standards, third-party risk assessment requirements, and board-level reporting procedures</li>
+        <li>2 - Deploy organization-wide continuous supply chain monitoring with runtime behavior analysis, automated dependency policy enforcement, package signature verification, and integration into software development lifecycle tools; establish automated alerting and escalation</li>
+        <li>3 - Conduct threat intelligence analysis on attack campaign: identify threat actor attribution, motivations, and targeting patterns; correlate against internal threat modeling and risk scenarios; assess likelihood of follow-on targeting</li>
+        <li>4 - Rebuild all artifacts generated by compromised pipelines from unaffected source code and build environments; re-publish and re-deploy across organization and to downstream consumers with formal remediation communication</li>
+        <li>5 - Establish executive-level supply chain risk governance program; conduct board briefing on supply chain attack trends, second-order organizational consequences, and strategic security investment requirements; align board risk appetite with supply chain security roadmap</li>
+        <li>6 - Engage with open-source project governance and funding mechanisms; contribute to AsyncAPI and similar critical projects for long-term security assurance improvements; participate in industry working groups on CI/CD security and package provenance standards</li>
+        <li>7 - Develop organizational threat intelligence capabilities for supply chain threat monitoring; establish vendor and supplier notification procedures; maintain threat intelligence sharing relationships with peer organizations and industry groups</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The AsyncAPI supply chain compromise is a watershed moment for organizational understanding of modern threat landscapes. This incident is not an edge case; it is a demonstration of operationalized attack patterns that adversaries have already integrated into routine targeting campaigns. The Pwn Request vector is straightforward to execute, difficult to detect, and applicable to thousands of open-source and commercial repositories. The consequences—credential exfiltration combined with persistent remote access—extend far beyond the compromised package to potentially every downstream consumer, every internal system accessible from compromised build environments, and every supplier relationship involving affected software.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Organizations treating build infrastructure as lower-priority security surfaces, maintaining overly broad credential scoping in CI/CD pipelines, and lacking supply chain visibility through SBOM programs will be disproportionately affected by incidents of this type. The pathway from malicious pull request to persistent enterprise compromise is now operationalized. Remediation requires immediate tactical action—credential rotation, system isolation, artifact rebuilding—combined with strategic improvements: CI/CD pipeline hardening, software provenance programs, and formalized supply chain governance. The incident provides the forcing function necessary to align security investment with genuine risk.</p>
+    <div class="pull-quote">"The incident provides the forcing function necessary to align security investment with genuine risk. Organizations that act decisively now strengthen institutional resilience; those that defer amplify exposure as similar attack patterns proliferate across open-source ecosystems."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">Pending formal CVE assignment; monitoring NVD and GitHub Advisory Database; cross-reference asyncapi/generator GitHub Security Advisories for official vulnerability tracking</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">CRITICAL (9.0–10.0): confirmed code execution, credential exfiltration, Remote Access Trojan deployment via trusted distribution channel</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">Supply Chain Compromise; Software Poisoning; CI/CD Pipeline Exploitation; Malware—Credential Stealer and Remote Access Trojan (Miasma); GitHub Actions Pwn Request Attack</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">July 17, 2026; coordinated disclosure across BleepingComputer, Datadog Security Labs, Kodems Security, Aikido Security</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Pwn Request attack against asyncapi/generator GitHub Actions workflows; Miasma RAT deployment and persistence; npm package version poisoning; credential exfiltration from affected build environments and developer systems</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Malicious pull request to asyncapi/generator repository; GitHub Actions `pull_request_target` workflow trigger with elevated permissions (write access, npm token access); arbitrary code execution within privileged CI/CD context; automatic npm package publication via compromised workflow; npm registry distribution to consuming developers and CI/CD pipelines</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">GitHub Actions execution environment; npm registry and distribution infrastructure; Linux, macOS, Windows developer workstations; AWS CodeBuild, Google Cloud Build, Azure Pipelines, Jenkins, GitLab CI/CD, on-premises build agents; containerized build systems (Docker, Kubernetes, OCI runtime); any environment executing `npm install` of affected packages</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">`@asyncapi/generator` npm package and associated AsyncAPI ecosystem packages; affected versions require cross-reference with official npm security advisory for complete list; packages published between July 2026 dates</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Software development organizations; build infrastructure and CI/CD pipelines; financial services, cloud infrastructure, logistics, IoT platforms, microservices-based enterprises with elevated exposure; any organization with AsyncAPI tooling in dependency chain</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">Approximately 48 hours from package publication to takedown; packages published to public npm registry during window remain cached in developer environments, internal mirrors, and artifact repositories</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
