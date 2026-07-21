@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Default-Open Defenses: Analyzing the Hard-Coded Credential Vulnerability in PraisonAI Infrastructure</title>
+<meta property="og:title" content="Default-Open Defenses: Analyzing the Hard-Coded Credential Vulnerability in PraisonAI Infrastructure"/>
+<meta property="og:description" content="PraisonAI deployments across all versions prior to 0.31.2 contain hardcoded authentication credentials embedded directly into application source code and compiled binaries—a foundational infrastructure vulnerability that grants unauthenticated adversaries direct access to autonomous agent systems, backend orchestration layers, and dependent infrastructure without exploitation of secondary vulnerabilities."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/DefaultOpenDefenses.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Jul/20260722-DefaultOpenDefenses.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Default-Open Defenses: Analyzing the Hard-Coded Cr…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Default-Open Defenses: Analyzing the Hard-Coded Credential Vulnerability in PraisonAI Infrastructure</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">hardcoded-credentials</span>
+      <span class="tag-badge">autonomous-agents</span>
+      <span class="tag-badge">credential-exposure</span>
+      <span class="tag-badge">supply-chain-security</span>
+      <span class="tag-badge">secrets-management</span>
+      <span class="tag-badge">AI-framework-vulnerability</span>
+      <span class="tag-badge">incident-response</span>
+      <span class="tag-badge">credential-rotation</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-critical"><strong>Severity:</strong> Critical</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: July 22, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/DefaultOpenDefenses.png" alt="Default-Open Defenses: Analyzing the Hard-Coded Credential Vulnerability in PraisonAI Infrastructure — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">PraisonAI deployments across all versions prior to 0.31.2 contain hardcoded authentication credentials embedded directly into application source code and compiled binaries—a foundational infrastructure vulnerability that grants unauthenticated adversaries direct access to autonomous agent systems, backend orchestration layers, and dependent infrastructure without exploitation of secondary vulnerabilities.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">The vulnerability affects Linux, macOS, Windows, and containerized environments across on-premises, cloud-hosted, and hybrid deployments. Organizations must immediately inventory affected systems, extract and rotate exposed credentials, implement enhanced monitoring for credential abuse, and deploy patches upon availability.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> The exposure window remains open; exploitation can occur at scale within hours of credential discovery. Credential rotation and access control hardening represent the most immediate containment measures available pending patch deployment.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> PraisonAI CVE-2026-47410 embeds hardcoded credentials directly into application source code and compiled binaries, enabling unauthenticated lateral movement, autonomous agent command injection, and unauthorized API access without requiring exploitation of secondary vulnerabilities.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">PraisonAI CVE-2026-47410 was discovered and reported through coordinated disclosure mechanisms in early July 2026. Following a 90-day embargo period to allow vendor notification and patch development, public announcement and official CVE issuance occurred on July 15, 2026. As of this publication date, no patch has been released; vendor roadmap indicates patch availability by July 29, 2026. In-the-wild exploitation has been confirmed by multiple threat intelligence sources, indicating that threat actors have identified and begun leveraging exposed credentials for unauthorized access to autonomous agent systems and backend infrastructure.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability was cataloged by the National Vulnerability Database (NVD) and assigned CVE-2026-47410 with a CVSS v3.1 score of 9.8 (CRITICAL). The attack vector is network-based; attack complexity is low, requiring no specialized tools or pre-existing privileges. The vulnerability affects all versions of PraisonAI released prior to 0.31.2, creating a broad exposure window across organizations that have deployed the framework in any capacity.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability stems from a fundamental credential management anti-pattern: authentication credentials required for system operation are hardcoded directly into application source code, embedded within compiled binaries, and included in default configuration files shipped with the framework. These credentials include API keys for external service authentication, database connection strings with embedded passwords, service account tokens for internal system access, SSH keys for remote infrastructure access, and encryption keys used for sensitive data protection.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Credentials are discoverable through multiple attack vectors. Examination of publicly accessible GitHub repositories reveals hardcoded credentials in committed source code and historical commit records. Container image inspection using standard Docker tools (docker inspect, docker history, strings utility) exposes credentials embedded in application layers. Compiled binary analysis using reverse engineering tools and string extraction utilities reveals credentials stored in unencrypted form within executable files. Configuration files accessible within deployed systems or container images contain plaintext credential material.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">For Security Practitioners &amp; SOC Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">The credential exposure creates three distinct attack surfaces. First, direct API access: exposed API keys grant unauthenticated adversaries the ability to invoke autonomous agent functions, query backend databases, modify agent configurations, and access sensitive data through API endpoints. Second, autonomous agent command injection: compromised service credentials enable attackers to inject malicious commands into agent execution contexts, causing agents to perform unintended actions including data exfiltration, lateral movement, or resource exhaustion. Third, backend orchestration hijacking: service account tokens and database credentials grant attackers direct access to orchestration layers, enabling unauthorized agent spawning, resource allocation manipulation, and workflow sabotage.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For Security Leaders &amp; CISOs</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Credential discovery difficulty is minimal, creating persistent exposure risk. GitHub commit history exposes credentials committed during development phases—discoverable artifacts indefinitely searchable by threat actors. Container image inspection represents passive reconnaissance requiring only standard Docker tools available to any user with image access. Automated credential scanning reduces reconnaissance to minutes; threat actors leveraging readily available tools can identify vulnerable deployments at scale. Detection gaps amplify risk as many organizations lack runtime credential monitoring to detect unauthorized credential usage. Time-to-compromise metrics indicate rapid exploitation potential with credentials exposed in public GitHub repositories discoverable within hours of commit and time-to-exploitation measured in hours, not days, compressing response windows significantly.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For Policy, Risk &amp; Compliance Officers</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Regulatory and compliance implications vary by sector. Organizations subject to HIPAA must report credential compromise affecting healthcare data. PCI-DSS frameworks require immediate notification if database credentials are compromised. SOC 2 Type II reports must address credential management controls and their adequacy. Sector-specific frameworks (NIST Cybersecurity Framework for critical infrastructure, FedRAMP for federal systems) require breach notification and remediation reporting. Adversary incentive structure is clear as autonomous agent systems represent high-value targets because they execute commands with implicit system-level privileges and operate with minimal human oversight. Credential theft eliminates reconnaissance requirements; attackers obtain direct system access rather than requiring vulnerability exploitation.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (Days to Weeks):</strong> Organizations must execute rapid inventory of all PraisonAI deployments. Version enumeration across all infrastructure layers—development systems, staging environments, production deployments, containerized workloads, cloud instances—provides the foundation for prioritization. Environmental mapping identifies which systems are internet-facing, which contain sensitive data, and which have access to critical infrastructure. Credential exposure assessment determines which specific credentials are embedded (API keys, database passwords, service tokens), which systems those credentials access, and the privilege level associated with each credential. Immediate credential rotation represents the most critical containment measure with dependent systems requiring priority sequencing.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short-Term (Weeks to Months):</strong> Access control hardening mitigates lateral movement risk through network segmentation, firewall rule updates, IAM policy restrictions, and runtime monitoring enhancement. Pre-patch mitigation strategies provide interim protection pending official patch deployment through environment variable injection, runtime credential override mechanisms, and temporary credential masking to prevent unauthorized access while maintaining service continuity. Patch readiness assessment ensures smooth deployment including testing in non-production environments, rollback procedure preparation, and deployment window planning. Compromise assessment through access log review and forensic analysis documents whether compromised credentials were used for unauthorized access.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Long-Term (Months to Years):</strong> Organizations must implement preventive infrastructure controls through pre-commit credential scanning tools, secrets management platform deployment (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault), runtime credential injection requirements, and enhanced code review processes. Establish continuous dependency scanning tools to identify vulnerable versions of PraisonAI and dependent libraries. Implement secrets management platform organization-wide as the authoritative credential repository with automated credential rotation policies. Deploy container image scanning in development pipelines and conduct security training for development teams on credential handling anti-patterns and secure secrets management practices.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul><li>1 - Inventory all PraisonAI deployments across development, staging, and production environments with version identification (&lt; 0.31.2 vulnerable)</li>
+        <li>2 - Extract hardcoded credentials from affected systems using automated scanning tools (detect-secrets, TruffleHog for repositories; Trivy or Grype for container images; strings utility for binaries)</li>
+        <li>3 - Initiate emergency credential rotation prioritizing database credentials first, followed by API keys, service account tokens, and SSH keys</li>
+        <li>4 - Activate enhanced logging on all systems accessed by exposed credentials to establish baseline audit trails</li>
+        <li>5 - Subscribe to official PraisonAI security communications and set alerts for patch release notification</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#fbbf24;">⬤ Intermediate Maturity Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with dedicated security functions, SIEM coverage, and structured incident response capability.</p>
+      <ul><li>1 - Execute comprehensive credential inventory with mapping of each credential to dependent systems and privilege levels</li>
+        <li>2 - Deploy behavior-based anomaly detection rules to identify suspicious usage patterns of exposed credentials (API calls from unusual locations, atypical data access, anomalous agent spawning)</li>
+        <li>3 - Conduct incident response-level compromise assessment reviewing access logs from July 1, 2026 forward with threat intelligence correlation</li>
+        <li>4 - Implement pre-commit credential scanning tools in development pipelines with code review process requirements for credential scanning clearance</li>
+        <li>5 - Plan and test patch deployment in non-production environments with rollback procedures and staged production rollout strategy</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#f87171;">⬤ Advanced Institutional Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with mature security programs, threat intelligence capacity, and advanced monitoring capability.</p>
+      <ul><li>1 - Deploy secrets management platform organization-wide (HashiCorp Vault, AWS Secrets Manager, Azure Key Vault) as authoritative credential repository with automated rotation</li>
+        <li>2 - Implement runtime credential injection via environment variables or secrets management APIs, eliminating hardcoded credential capability</li>
+        <li>3 - Establish continuous dependency scanning infrastructure (Dependabot, Snyk, WhiteSource) with quarterly security assessments of emerging AI/ML frameworks</li>
+        <li>4 - Generate and maintain Software Bill of Materials (SBOM) in standardized formats (CycloneDX, SPDX) for all deployments with ongoing tracking</li>
+        <li>5 - Conduct forensic timeline reconstruction for regulatory reporting with assessment of compromise scope and automated breach notification workflows per HIPAA, PCI-DSS, and state requirements</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2026-47410 represents a critical failure in foundational credential management practices—not an implementation flaw but an architectural decision embedded in the framework itself. The vulnerability's severity stems not from sophisticated exploitation requirements but from the elimination of security friction in development workflows at the cost of operational security. Organizations operating autonomous agent systems must treat credential exposure as a first-line remediation priority, not a secondary concern deferred pending formal patch availability.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability underscores a broader institutional challenge: emerging frameworks prioritizing developer experience over security-by-default create persistent exposure windows that depend on organizational responsiveness rather than vendor solutions. Credential rotation capability, secrets management platform readiness, and detection effectiveness determine organizational outcomes more than patch deployment timelines. The most resilient organizations will be those that treat hardcoded credential discovery not as a surprise but as an expected vulnerability class requiring standardized, rapid-response protocols already embedded in incident response procedures.</p>
+    <div class="pull-quote">"Institutional resilience against this vulnerability class requires continuous investment: pre-commit credential scanning, secrets management automation, runtime monitoring enhancement, and ongoing vulnerability assessment."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2026-47410</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">9.8 (CRITICAL) | CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">CWE-798: Use of Hard-Coded Credentials | CWE-260: Password in Configuration File</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">July 15, 2026 (Coordinated Disclosure, 90-day embargo elapsed)</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">In-the-wild exploitation confirmed by multiple threat intelligence sources; threat actors leveraging exposed credentials for unauthorized access to autonomous agent systems and backend infrastructure</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Network (AV:N) and Local (AV:L); Attack Complexity Low (AC:L); No Privileges Required (PR:N); No User Interaction (UI:N)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Linux, macOS, Windows, Containerized environments (Docker, Kubernetes)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">PraisonAI versions &lt; 0.31.2 (all versions prior to 0.31.2)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">On-Premises, Cloud-Hosted (AWS, Azure, GCP), Hybrid deployments</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">Open (Patch ETA: July 29, 2026; In-the-wild exploitation confirmed; exploitation can occur at scale within hours of credential discovery)</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
