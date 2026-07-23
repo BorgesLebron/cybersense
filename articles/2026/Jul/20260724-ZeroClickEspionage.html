@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Zero-Click Espionage: Russian APT Laundry Bear Exploit Target Zimbra Webmail for Silent Email Theft</title>
+<meta property="og:title" content="Zero-Click Espionage: Russian APT Laundry Bear Exploit Target Zimbra Webmail for Silent Email Theft"/>
+<meta property="og:description" content="Unit 42 has disclosed CL-STA-1114, a Russian state-nexus cyberespionage campaign exploiting a stored cross-site scripting flaw in Zimbra Collaboration Suite's Classic UI since at least July 2025—executing automatically inside a victim's authenticated webmail session with no click or attachment required."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/ZeroClickEspionage.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Jul/20260724-ZeroClickEspionage.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Zero-Click Espionage: Russian APT Laundry Bear Exploit …</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">Threat</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Zero-Click Espionage: Russian APT Laundry Bear Exploit Target Zimbra Webmail for Silent Email Theft</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">CVE-2025-66376</span>
+      <span class="tag-badge">CL-STA-1114</span>
+      <span class="tag-badge">Laundry Bear / Void Blizzard</span>
+      <span class="tag-badge">Zimbra Collaboration Suite</span>
+      <span class="tag-badge">zero-click exploitation</span>
+      <span class="tag-badge">stored XSS</span>
+      <span class="tag-badge">Russia-nexus espionage</span>
+      <span class="tag-badge">CISA KEV</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-high"><strong>Severity:</strong> High</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: July 24, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/ZeroClickEspionage.png" alt="Zero-Click Espionage: Russian APT Laundry Bear Exploit Target Zimbra Webmail for Silent Email Theft — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">Unit 42 has disclosed CL-STA-1114, a Russian state-nexus cyberespionage campaign—overlapping with activity tracked elsewhere as Void Blizzard, LAUNDRY BEAR, and TA488—that has exploited a stored cross-site scripting flaw in Zimbra Collaboration Suite's Classic UI, tracked as CVE-2025-66376, since at least July 2025. The technique requires no victim interaction beyond opening an email: a Base64-encoded, SVG-hidden JavaScript payload executes automatically inside the victim's authenticated webmail session, harvesting credentials, CSRF tokens, 2FA scratch codes, and up to 90 days of email and search history.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">Targets span government, defense, transportation, and financial-sector organizations across NATO member states, Ukraine, CIS countries, and Africa. The underlying vulnerability was a zero-day when the campaign began, patched only in November 2025 and added to CISA's Known Exploited Vulnerabilities catalog in March 2026, yet exploitation has continued against unpatched instances well past both the patch release date and the federal remediation deadline.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">Organizations running Zimbra Classic UI should verify patch status against version 10.0.18/10.1.13 immediately, independent of any other planned security review cycle.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> CL-STA-1114 requires no victim interaction beyond opening an email, executing an obfuscated JavaScript payload automatically inside the victim's authenticated Zimbra webmail session to exfiltrate credentials, 2FA codes, and up to 90 days of communications history—demonstrating that a single patchable web application vulnerability can sustain a multi-sector, nation-state collection operation for well over a year when patch adoption lags patch availability.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Unit 42, the threat intelligence arm of Palo Alto Networks, published technical analysis on July 23, 2026 documenting CL-STA-1114, a campaign it assesses to be Russian state-nexus in origin and which overlaps with activity other vendors track as Void Blizzard, LAUNDRY BEAR, and TA488. Broader activity attributed to the same actor set has been tracked since at least 2024, but targeting specifically directed at Zimbra webmail deployments began in July 2025—while the exploited flaw was still a zero-day, with no vendor patch available—and, according to Unit 42's reporting, has continued through the time of publication.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The attack chain begins with a phishing email containing either an HTML attachment or inline HTML body content. Embedded within that content is an obfuscated, Base64-encoded JavaScript payload concealed inside an invisible SVG element—a construct designed to render without any visible indication to the recipient. When the email is opened and rendered inside Zimbra's Classic UI, the hidden script decodes and executes automatically, without requiring the recipient to click a link, open an attachment, or take any action beyond viewing the message. The underlying flaw enabling this execution is CVE-2025-66376, a stored cross-site scripting vulnerability rated 7.2 (High) on the CVSS scale, rooted in insufficiently sanitized handling of CSS @import directives within HTML email content.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Once executed, the injected script operates inside the victim's already-authenticated webmail session, allowing it to harvest session credentials, CSRF tokens, and two-factor authentication scratch codes, along with up to 90 days of the victim's email and search history. Collected data is exfiltrated to actor-controlled command-and-control infrastructure that Unit 42 observed rotating across at least nine distinct domains and nine IP addresses over the course of the campaign, with each piece of infrastructure remaining operational for an average of roughly 35 days before rotation—a pattern consistent with deliberate infrastructure hygiene intended to limit the useful life of any single indicator.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability itself was addressed by Zimbra in versions 10.0.18 and 10.1.13, released in November 2025, and was subsequently added to CISA's Known Exploited Vulnerabilities catalog on March 18, 2026, which carried a federal civilian remediation deadline of April 1, 2026. Despite the availability of a patch for several months prior to KEV inclusion, and despite the subsequent federal deadline, Unit 42's reporting—corroborated by a joint cybersecurity advisory from CISA and international partner agencies including Canada's Cyber Centre and the UK's National Cyber Security Centre, along with independent practitioner coverage—indicates continued exploitation against unpatched Zimbra instances well past all of these milestones. Targeting has spanned government ministries, defense and military agencies, transportation-sector organizations, and financial institutions across NATO member states, Ukraine, CIS countries, and African nations, and prior reporting from Seqrite under the name "Operation GhostMail" documented related activity specifically targeting Ukrainian state agencies.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+
+    <h3 class="text-lg font-semibold mb-2">For Practitioners</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">The zero-click nature of this exploitation defeats a security control most organizations rely on heavily: user awareness training focused on phishing recognition. Because the payload executes on message render, with no link to click and no attachment to open, standard guidance around suspicious-link avoidance provides no protective value against this specific technique, leaving technical controls as the sole effective line of defense.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For Security Leaders &amp; Executives</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Government, defense, and financial-sector organizations continuing to run unpatched Zimbra Classic UI remain exposed to sustained credential and communications-intelligence collection by a persistent, well-resourced state actor, independent of whatever other security controls those organizations may have in place elsewhere in their environment. The narrow, specific nature of the vulnerable component means an organization's broader security maturity does not meaningfully reduce this particular exposure if the underlying patch has not been applied.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For Policy-Aware Professionals</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">This campaign is a documented, KEV-catalog-listed case with a confirmed exploitation timeline that extends well past both patch availability and the CISA BOD 22-01-driven federal remediation deadline. It provides a concrete, dated illustration of the practical gap between vulnerability disclosure, catalog inclusion, mandated remediation timelines, and actual field-level patch adoption—a gap that matters directly to institutions evaluating the real-world effectiveness of KEV-based remediation mandates rather than their theoretical coverage.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate Term:</strong> Any organization operating Zimbra Collaboration Suite with the Classic UI should verify current patch status against versions 10.0.18 and 10.1.13 as a baseline control, treating any instance below those versions as actively and specifically targeted rather than theoretically vulnerable. This verification should not be deferred to a routine patch cycle given the sustained, ongoing nature of the observed exploitation.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short Term:</strong> SOC and email security teams should hunt for the published indicator infrastructure—the nine documented command-and-control domains and IP addresses—within DNS logs, proxy logs, and mail gateway records, recognizing that the infrastructure's rotation pattern (averaging roughly 35 days per indicator) means historical log review may be as valuable as forward-looking blocking. Email security tooling capable of detonating or rendering HTML-embedded scripts prior to delivery, rather than relying solely on link- or attachment-based sandboxing, offers more meaningful protection against this specific technique than conventional phishing filters, which are largely oriented around the click-based attack pattern this campaign does not use.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Long Term:</strong> This campaign should inform how organizations weight KEV-catalog inclusion and federal remediation deadlines in their own internal prioritization models. The observed continuation of successful exploitation well past both the patch release date and the CISA-mandated deadline suggests that catalog inclusion and deadline-setting alone do not reliably drive field remediation, particularly for infrastructure like webmail platforms that may not receive the same patch-cycle attention as more visibly internet-facing systems. Institutional stakeholders should treat KEV inclusion as a floor for urgency, not a ceiling, and should build verification steps into remediation tracking rather than relying on deadline-passage as an implicit signal that exposure has been addressed.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity, with remediation centered on patch verification and indicator hunting given the campaign's zero-click delivery mechanism.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Organizations</div>
+      <ul><li>1 - Confirm Zimbra Version Across All Instances: Verify the running version of Zimbra Collaboration Suite across all deployed instances is 10.0.18, 10.1.13, or later.</li>
+        <li>2 - Prioritize Internet-Facing Instances First: Where confirmation is not immediately possible across the full environment, prioritize identification of internet-facing and externally accessible Zimbra instances first.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#fbbf24;">⬤ Intermediate Organizations</div>
+      <ul><li>1 - Hunt Published C2 Infrastructure: Hunt for the nine published command-and-control domains and IP addresses associated with this campaign within DNS resolution logs and web proxy logs, covering as much historical retention as is available given the infrastructure's documented rotation pattern.</li>
+        <li>2 - Inspect Stored Email for Hidden SVG Payloads: Inspect stored HTML email content for obfuscated inline SVG elements containing Base64-encoded constructs.</li>
+        <li>3 - Deploy Pre-Delivery HTML Detonation: Deploy or configure email security tooling capable of detonating HTML-embedded scripts prior to delivery rather than depending solely on attachment- or link-based sandboxing.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#f87171;">⬤ Advanced Organizations</div>
+      <ul><li>1 - Rotate Webmail Platforms into Threat Hunting: Incorporate Zimbra and other webmail platforms into regular threat-hunting rotations independent of sector, given this campaign's demonstrated cross-sector targeting pattern spanning government, defense, transportation, and financial organizations.</li>
+        <li>2 - Reassess Patch-Cycle Attention for Webmail: Security architecture teams should evaluate whether webmail platforms are receiving patch-cycle attention proportional to their exposure to internet-facing, unauthenticated content such as inbound email, and should consider this campaign as a reference case when assessing the practical remediation timeline gap between KEV-catalog inclusion and verified field-level patching.</li></ul>
+    </div>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Institutional Note:</strong> Institutional stakeholders should treat KEV-catalog inclusion and associated federal remediation deadlines as a minimum baseline for urgency rather than as evidence that exposure has been resolved once the deadline has passed, particularly for widely deployed collaboration platforms.</p>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CL-STA-1114 is, at its technical core, the exploitation of a single patchable vulnerability—but its sustained, cross-sector, multi-year operational life illustrates a gap that no single patch release can close on its own: the distance between a fix being available and a fix being applied. Zero-click techniques that operate entirely within a trusted, authenticated session challenge the assumption that user vigilance is a meaningful layer of defense, reinforcing that institutional resilience increasingly depends on verified technical remediation rather than awareness alone.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Bridging that gap—between disclosure and adoption—remains as central to reducing real-world risk as the disclosure itself.</p>
+    <div class="pull-quote">"The distance between a fix being available and a fix being applied is where sustained, cross-sector espionage operations live."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2025-66376 (Zimbra Collaboration Suite Classic UI stored XSS)</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">CVE-2025-66376: 7.2 High</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">Russia-Nexus State-Sponsored Cyberespionage / Zero-Click Webmail Exploitation / Stored Cross-Site Scripting / Credential and Communications-Intelligence Collection</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">July 23, 2026 (Unit 42, Palo Alto Networks); underlying CVE originally exploited as a zero-day and patched November 2025; added to CISA KEV catalog March 18, 2026</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">CL-STA-1114 (Unit 42 designation), overlapping with Void Blizzard, LAUNDRY BEAR, and TA488 (Microsoft/other-vendor designations); related prior reporting under "Operation GhostMail" (Seqrite) targeting Ukrainian state agencies; campaign active and ongoing since July 2025 against Zimbra targets, broader group activity tracked since at least 2024</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Zero-click phishing email with HTML attachment or inline HTML; obfuscated Base64-encoded JavaScript hidden in an invisible SVG element; automatic execution on message render exploiting stored XSS in Zimbra Classic UI; exfiltration of CSRF tokens, credentials, 2FA scratch codes, system/environment details, and up to 90 days of email/search history to actor-controlled C2</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Zimbra Collaboration Suite (ZCS) webmail servers, Classic UI specifically</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Zimbra Collaboration Suite versions prior to 10.0.18 / 10.1.13</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Government ministries, defense and military agencies, transportation-sector organizations, and financial institutions across NATO member states, Ukraine, CIS countries, and Africa</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">Exploited as a zero-day from at least July 2025; vulnerability patched November 2025; campaign exploitation observed through at least July 2026; added to CISA KEV catalog March 18, 2026 with an April 1, 2026 federal remediation deadline; unpatched instances remain actively targeted as of publication</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

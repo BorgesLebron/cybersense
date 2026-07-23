@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Browser-As-A-Proxy: New msaRAT Malware Routes Command-and-Control Through Chrome and Edge</title>
+<meta property="og:title" content="Browser-As-A-Proxy: New msaRAT Malware Routes Command-and-Control Through Chrome and Edge"/>
+<meta property="og:description" content="A newly documented remote access trojan, msaRAT, hijacks a victim's own Chrome or Edge browser via the Chrome DevTools Protocol and relays command-and-control traffic through legitimate Cloudflare Workers and Twilio TURN infrastructure, rendering process-based and reputation-based detection structurally blind."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/BrowserAsAProxy.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Jul/20260724-BrowserAsAProxy.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Browser-As-A-Proxy: New msaRAT Malware Routes Command…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">Threat</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Browser-As-A-Proxy: New msaRAT Malware Routes Command-and-Control Through Chrome and Edge</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">msaRAT</span>
+      <span class="tag-badge">Chaos ransomware</span>
+      <span class="tag-badge">Chrome DevTools Protocol</span>
+      <span class="tag-badge">WebRTC C2</span>
+      <span class="tag-badge">living off the cloud</span>
+      <span class="tag-badge">browser-proxied C2</span>
+      <span class="tag-badge">detection evasion</span>
+      <span class="tag-badge">Cisco Talos</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-high"><strong>Severity:</strong> High</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: July 24, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/BrowserAsAProxy.png" alt="Browser-As-A-Proxy: New msaRAT Malware Routes Command-and-Control Through Chrome and Edge — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">A newly documented remote access trojan, msaRAT, marks a structural departure in how ransomware-affiliated tooling communicates with its operators. Rather than relying on obfuscated domains or fronted infrastructure to evade network detection, msaRAT eliminates direct malware-to-command-and-control traffic entirely. It hijacks a victim's own installed Chrome or Edge browser through the Chrome DevTools Protocol, then uses that browser to negotiate a WebRTC connection relayed through legitimate Cloudflare Workers and Twilio TURN infrastructure.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">The result is command-and-control traffic that appears, at the host and network layer, indistinguishable from ordinary browser activity. Cisco Talos attributes deployment of msaRAT to the Chaos ransomware-as-a-service group, delivered via a disguised Windows update installer.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">For security teams, the practical takeaway is immediate: detection and allowlisting strategies built on process identity and destination reputation are no longer sufficient on their own, and behavioral monitoring for browser automation abuse should be treated as a near-term priority.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> msaRAT removes the malicious process from the network path entirely by forcing a victim's legitimate Chrome or Edge browser to carry all command-and-control traffic over a WebRTC relay, rendering process-based and reputation-based detection models structurally blind to the technique.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">On July 23, 2026, Cisco Talos Intelligence Group published technical analysis describing a previously undocumented Rust-based remote access trojan it has named msaRAT — a designation drawn from internal Chrome DevTools Protocol (CDP) binding names observed in the malware's code (msaOpen, msaClose, msaError, msaMessage). Talos attributes deployment of the tool to the Chaos ransomware-as-a-service group, an affiliate-driven operation whose activity Talos and other researchers have tracked since early 2025. Initial access in the observed cases traces to a dropper disguised as a routine Windows update, distributed via an MSI installer named <code>update_ms.msi</code> and delivered through spam and vishing-based social engineering rather than a novel exploitation technique.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">What distinguishes msaRAT from prior tooling attributed to Chaos is not its delivery mechanism but its communication architecture. Conventional RATs typically open a direct network socket from the compromised host to an operator-controlled server, a behavior that—however well obfuscated—still produces a discrete, attributable process making outbound connections. msaRAT, built on the Rust Tokio asynchronous runtime, dispenses with this model entirely. Once resident on a host, it does not communicate over the network itself. Instead, it launches a headless instance of whichever browser is already installed, Chrome or Edge, and connects to that instance using the Chrome DevTools Protocol—the same interface browser vendors expose for legitimate automation, debugging, and testing tooling. Through CDP, msaRAT injects JavaScript into the headless session and uses that injected code to negotiate a WebRTC DataChannel.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The signaling exchange required to establish this channel—the SDP handshake that allows two WebRTC peers to discover one another—is brokered through a Cloudflare Workers endpoint, meaning the initial connection request traverses infrastructure widely allowlisted by enterprise security tooling. Once the channel is established, all subsequent command-and-control traffic is relayed through Twilio's TURN infrastructure, a service designed to route real-time communications traffic around network address translation and firewall restrictions. As an added layer, Talos notes that C2 payloads carried over this channel are independently encrypted with ChaCha20-Poly1305, layered on top of the DTLS encryption WebRTC already provides natively.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Every stage of the malware's external communication—signaling and relay alike—is carried by infrastructure operated by reputable, widely used providers, and every packet observed at the host level originates from a signed, legitimate browser binary rather than the malicious process itself. Talos characterizes this as a deliberate architectural choice: removing the RAT from the network path altogether, rather than merely obscuring it.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">BleepingComputer's practitioner-facing coverage and independent analysis from GridinSoft and Cypro have since corroborated the core technical findings, with community discussion on malware.news noting that the technique, while novel in its specific combination of CDP abuse and WebRTC relay, extends a broader and increasingly familiar pattern of adversaries repurposing legitimate cloud and developer platforms as covert infrastructure.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+
+    <h3 class="text-lg font-semibold mb-2">For SOC Analysts &amp; Detection Engineers</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">msaRAT poses a structural challenge rather than a signature-matching one. Detection logic that flags "unusual processes making outbound network connections" is, by design, blind to this technique—the process making the connection is always the legitimate, digitally signed browser binary that already has broad network privileges on most enterprise endpoints. Effective detection has to shift toward identifying the conditions under which a browser is launched and controlled, rather than relying on the fact of its network activity.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For Security Leaders &amp; Architects</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">The more consequential implication concerns policy design. Cloudflare Workers and Twilio TURN are legitimate, widely used commercial platforms with substantial enterprise adoption of their own, which means destination-based blocking or reputation scoring is not a viable standalone control here; blocking the infrastructure outright risks breaking legitimate business functions that depend on it. This pushes the burden toward behavioral and contextual monitoring—a more resource-intensive posture that not every organization is currently staffed or tooled to sustain.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">For Policy-Aware Executives &amp; Workforce Development Professionals</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">msaRAT is best understood as one instance of a broader and durable trend sometimes termed "living off the cloud" (LOTC): the repurposing of trusted developer, communications, and collaboration platforms as covert infrastructure. This pattern complicates not only detection but also attribution and takedown, since disrupting the infrastructure itself means acting against a legitimate provider's service rather than a dedicated malicious host. Organizations should expect this category of technique to recur across other cloud-native relay and signaling services, not remain unique to WebRTC or to Chaos-affiliated tooling.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate Term:</strong> Incident response teams should treat unexplained headless browser processes—particularly those launched with remote-debugging or automation flags by non-browser parent processes such as installers or scripts—as a high-confidence indicator of compromise rather than a benign automation artifact. This requires updating existing triage playbooks, which have historically treated headless browser activity as most associated with adware, scraping tools, or internal QA automation, to reflect this new C2 use case.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short Term:</strong> EDR and network detection engineering built around process-to-network correlation needs augmentation rather than replacement. Behavioral baselining of CDP usage—specifically, remote-debugging-port activation by processes other than expected automation or testing frameworks—and of WebRTC DataChannel creation outside known application contexts represent the two most direct detection opportunities Talos's analysis surfaces. Neither is likely to be a simple signature; both require establishing a baseline of legitimate CDP and WebRTC activity in a given environment before anomalies become reliably distinguishable from normal use.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Long Term:</strong> This technique argues for a broader reassessment of how much implicit trust is extended to signed browser processes within detection architectures. Many existing controls were built on the reasonable but now-eroding assumption that a legitimate, vendor-signed browser binary making network connections is inherently lower-risk than an unknown process doing the same. msaRAT demonstrates that this assumption can be directly exploited by an adversary with local code execution, and that architecture decisions premised on it—including some allowlisting and DLP configurations—may need revisiting independent of any specific patch or signature update, since this is a tradecraft disclosure rather than a vulnerability with a remediation path.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">This is a tradecraft disclosure rather than a vulnerability with a remediation path — actions are stratified by organizational maturity and focus on detection and behavioral controls rather than patching.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Organizations</div>
+      <ul><li>1 - Capture Browser Launch Arguments: Ensure endpoint logging captures browser process launch arguments, including flags such as <code>--headless</code>, <code>--remote-debugging-port</code>, and <code>--disable-gpu</code>, retained long enough to support retrospective investigation.</li>
+        <li>2 - Escalate Headless Browser Activity in Playbooks: Review incident response playbooks to confirm that headless browser activity from non-standard parent processes (installers, MSI packages, scripting hosts) is explicitly treated as an escalation trigger rather than filtered as noise.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#fbbf24;">⬤ Intermediate Organizations</div>
+      <ul><li>1 - Alert on Unauthorized CDP Activation: Deploy or tune EDR rules to alert on CDP remote-debugging-port activation initiated by processes outside an approved automation or QA tooling inventory.</li>
+        <li>2 - Reassess Allowlisting for Abused Infrastructure: Review current allowlisting policies for <code>*.workers.dev</code> and Twilio TURN IP ranges, understanding that blanket allow decisions are no longer a sufficient standalone control; layer behavioral or volumetric monitoring on top of existing allow rules rather than removing them outright, given legitimate business dependencies on both platforms.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#f87171;">⬤ Advanced Organizations</div>
+      <ul><li>1 - Build WebRTC Behavioral Baselines: Build or extend behavioral baselines for WebRTC DataChannel creation across the endpoint fleet, distinguishing expected application-driven WebRTC use (video conferencing, collaboration tooling) from unexpected instantiation tied to browser automation.</li>
+        <li>2 - Incorporate CDP Abuse into Red/Purple Team Exercises: Security architecture teams should incorporate CDP-abuse and browser-proxied C2 scenarios into red team and purple team exercises.</li>
+        <li>3 - Track Chaos-Affiliated Tooling Evolution: Threat intelligence functions should track Chaos-affiliated tooling evolution specifically, given the group's demonstrated willingness to invest in architecturally novel C2 techniques rather than iterating on existing malware families.</li></ul>
+    </div>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Across All Maturity Levels:</strong> Institutional stakeholders should update ransomware tabletop exercises to include browser-proxied C2 as a distinct initial-detection blind spot, separate from the beaconing-based scenarios most existing tabletops are built around.</p>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">msaRAT does not introduce a new vulnerability to patch or a new exploit to signature; it introduces a new question about where trust is placed in detection architecture. As adversaries continue to route their operations through the same reputable, widely adopted infrastructure that organizations rely on daily, the durable lesson is not specific to WebRTC, Cloudflare Workers, or Twilio TURN—it is that legitimacy of origin and legitimacy of intent are no longer reliable proxies for one another.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Bridging that awareness gap, one architecture at a time, remains the ongoing work of institutional resilience.</p>
+    <div class="pull-quote">"Legitimacy of origin and legitimacy of intent are no longer reliable proxies for one another."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">None assigned (malware family, not a vulnerability); tracked as "msaRAT" (Cisco Talos naming, derived from internal CDP binding names msaOpen/msaClose/msaError/msaMessage)</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">Not applicable (malware/TTP disclosure, not a CVE)</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">Ransomware-affiliated RAT / Covert C2 Infrastructure Abuse / Living-Off-the-Cloud (LOTC) / Browser-Proxied Command-and-Control</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">July 23, 2026 (Cisco Talos Intelligence Group)</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Chaos ransomware-as-a-service group (RaaS activity first confirmed February 2025); msaRAT is a newly documented loader/RAT component in the group's toolkit, delivered via an "update_ms.msi" dropper disguised as a Windows update</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Post-compromise MSI dropper execution; CDP-based browser hijacking of locally installed Chrome/Edge; WebRTC DataChannel C2 tunnel with Cloudflare Workers SDP signaling relay and Twilio TURN traffic relay; dual-layer encryption (DTLS + ChaCha20-Poly1305)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Windows endpoints with Chrome or Microsoft Edge installed</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Google Chrome, Microsoft Edge (any recent version supporting CDP remote debugging); Cloudflare Workers and Twilio TURN as abused third-party infrastructure</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Enterprise Windows endpoints already compromised via Chaos ransomware's initial-access chain (spam/vishing); most relevant to environments with heavy egress allowlisting for cloud/CDN and communications platforms</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">Actively used as of July 2026; no CVE/patch path since this is a TTP rather than a software vulnerability — mitigation is detection/behavioral, not patch-based</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
