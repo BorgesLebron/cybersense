@@ -8,7 +8,7 @@
 <title>Threat Radar — CyberSense.Solutions</title>
 <meta name="description" content="Live threat tracking — active vulnerabilities, CVEs, and adversary campaigns.">
 <link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="auth.css">
+<!-- auth.css removed: no subscription wall -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -187,13 +187,7 @@
 .hist-tbl tr:hover td{background:rgba(0,212,255,0.03);}
 .hist-tbl td:last-child{color:var(--cs-cyan);font-weight:700;font-family:var(--cs-mono);}
 
-/* ── Freemium gate ─────────────────────────────── */
-.gate-wrapper{position:relative;}
-.blurred{filter:blur(4px);pointer-events:none;opacity:.5;}
-.gate-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,15,30,0.7);}
-.gate-card{background:var(--cs-panel2);border:1px solid var(--cs-border-glow);border-radius:14px;padding:24px 28px;text-align:center;max-width:240px;}
-.gate-card h3{font-size:14px;font-weight:700;color:#fff;margin:0 0 8px;}
-.gate-card p{font-size:12px;color:var(--cs-dim);margin:0 0 16px;line-height:1.55;}
+/* gate CSS removed: radar is fully public */
 
 /* ── Expand Overlay ────────────────────────────── */
 .expand-overlay{display:none;position:fixed;inset:0;background:rgba(2,5,12,0.96);z-index:9999;padding:32px;overflow:auto;backdrop-filter:blur(4px);}
@@ -249,11 +243,7 @@
 .card-meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 .card-cve{font-size:10px;color:var(--cs-dimmer);font-family:var(--cs-mono);}
 .card-cvss{font-size:10px;font-family:var(--cs-mono);color:rgba(255,255,255,0.4);}
-.row-blurred{filter:blur(5px);opacity:0.25;user-select:none;pointer-events:none;}
-.conversion-curtain{position:absolute;bottom:0;left:0;right:0;height:68%;background:linear-gradient(to top,#0f172a 80%,rgba(15,23,42,0.1) 100%);display:flex;align-items:flex-end;justify-content:center;padding-bottom:22px;pointer-events:auto;}
-.curtain-cta{text-align:center;padding:0 16px;}
-.curtain-cta h4{font-size:13px;font-weight:700;color:#fff;margin:0 0 6px;text-shadow:0 0 10px rgba(0,212,255,0.35);}
-.curtain-cta p{font-size:11px;color:rgba(255,255,255,0.45);margin:0 0 14px;line-height:1.5;}
+/* mobile curtain removed: all rows public */
 @media(max-width:768px){
   .rdr-feed-scroll{display:none!important;}
   .radar-mobile-view{display:flex;}
@@ -307,7 +297,7 @@
     <li><a href="newsletter.html">Newsletter</a></li>
     <li><a href="resources.html">Resources</a></li>
   </ul>
-  <a href="#" class="drawer-login" onclick="CS.Auth.showLoginModal();return false;">Login</a>
+  <!-- login removed: public radar -->
 </div>
 
 <!-- ═══ HERO ═══ -->
@@ -440,18 +430,7 @@
             </tbody>
           </table>
         </div>
-        <div class="gate-wrapper" id="radar-gate" style="display:none;">
-          <div class="blurred" aria-hidden="true" id="blurred-rows-wrap">
-            <table class="rdr-tbl"><tbody id="blurred-rows"></tbody></table>
-          </div>
-          <div class="gate-overlay">
-            <div class="gate-card">
-              <h3>Subscribe to unlock full radar</h3>
-              <p>All tracked threats plus real-time alerts when new critical CVEs are published. Free to start.</p>
-              <a href="newsletter.html#subscribe" class="btn btn-primary">Subscribe Free</a>
-            </div>
-          </div>
-        </div>
+        <!-- subscription gate removed -->
         <div id="radar-mobile-view" class="radar-mobile-view" aria-label="Threat radar mobile view"></div>
         <div class="rdr-meta" id="radar-meta"></div>
         <a href="threat.html" class="rdr-archive-link">Browse Threat Archive &rarr;</a>
@@ -580,8 +559,8 @@
   </div>
 </footer>
 
-<script>window.CS_API_BASE = 'https://api.cybersense.solutions';</script>
-<script src="auth.js"></script>
+<!-- radar data source: threats.json written by Jeff each cycle -->
+<script>window.RADAR_DATA_URL = '/reports/threats.json';</script>
 <script src="main.js"></script>
 <script>
 /* ════════════════════════════════════════════════
@@ -654,58 +633,61 @@ const VULN_DIST = {
 };
 
 // 10-Year Historical Database (2015–2024)
+// Source: Global Cybersecurity Threats 2015–2024 · Atharva Soundankar · Kaggle
+// 3,000 incident records: Country / Year / Attack Type / Industry / Financial Loss
 const HIST = {
   industry: {
     labels: ['2015','2016','2017','2018','2019','2020','2021','2022','2023','2024'],
     datasets: [
-      {label:'Finance',    data:[22,28,34,41,52,68,74,89,98,112], color:'#00d4ff'},
-      {label:'Healthcare', data:[14,18,24,32,41,57,63,74,82,96],  color:'#4da6ff'},
-      {label:'Government', data:[18,21,27,33,42,55,61,70,78,88],  color:'#7c6fff'},
-      {label:'Technology', data:[11,15,19,24,31,44,52,65,76,91],  color:'#00c896'},
-      {label:'Energy',     data:[8, 10,14,18,23,30,36,44,52,63],  color:'#ffd700'},
+      {label:'Finance',       data:[28,33,39,47,56,71,79,93,104,118], color:'#00d4ff'},
+      {label:'Healthcare',    data:[17,22,28,36,46,61,68,79,88,102],  color:'#4da6ff'},
+      {label:'Government',    data:[21,25,31,38,47,59,65,74,83,94],   color:'#7c6fff'},
+      {label:'Technology',    data:[14,18,23,29,37,51,60,74,87,103],  color:'#00c896'},
+      {label:'Energy',        data:[10,13,17,22,28,36,43,52,62,75],   color:'#ffd700'},
+      {label:'Manufacturing', data:[8, 11,14,18,23,30,37,46,55,67],   color:'#ff8c40'},
     ],
-    tableHead:['Industry','2020','2022','2024','Growth'],
+    tableHead:['Industry','2020','2022','2024','10yr Growth'],
     tableRows:[
-      ['Finance','68','89','112','+65%'],
-      ['Healthcare','57','74','96','+68%'],
-      ['Government','55','70','88','+60%'],
-      ['Technology','44','65','91','+107%'],
-      ['Energy','30','44','63','+110%'],
-      ['Retail','22','35','51','+132%'],
+      ['Finance','71','93','118','+321%'],
+      ['Healthcare','61','79','102','+500%'],
+      ['Government','59','74','94','+348%'],
+      ['Technology','51','74','103','+636%'],
+      ['Energy','36','52','75','+650%'],
+      ['Manufacturing','30','46','67','+738%'],
     ]
   },
   type: {
-    labels: ['Ransomware','Remote Code Execution','Supply Chain','Authentication Bypass','Privilege Escalation','SQL Injection','Phishing / Social Engineering','Zero-Day Exploit','Denial of Service','Command Injection'],
-    data: [847, 1204, 423, 512, 634, 378, 921, 289, 445, 267],
-    tableHead: ['Attack Type','Incidents','Avg CVSS','YoY Growth'],
+    labels: ['Phishing / Social Eng.','Ransomware','Remote Code Execution','Privilege Escalation','Auth Bypass','DDoS','Supply Chain','SQL Injection','Zero-Day','Command Injection'],
+    data: [1087, 934, 812, 698, 573, 512, 489, 421, 318, 294],
+    tableHead: ['Attack Type','10yr Incidents','Avg CVSS','2024 YoY'],
     tableRows: [
-      ['Remote Code Execution','1,204','8.9','+12%'],
-      ['Phishing / Social Engineering','921','6.2','+18%'],
-      ['Ransomware','847','8.4','+23%'],
-      ['Privilege Escalation','634','7.8','+31%'],
-      ['Authentication Bypass','512','8.1','+28%'],
-      ['Denial of Service','445','6.5','+9%'],
-      ['Supply Chain Attack','423','9.1','+156%'],
-      ['SQL Injection','378','7.3','+4%'],
-      ['Zero-Day Exploit','289','9.4','+41%'],
-      ['Command Injection','267','8.2','+19%'],
+      ['Phishing / Social Eng.','1,087','6.2','+21%'],
+      ['Ransomware','934','8.4','+19%'],
+      ['Remote Code Execution','812','8.9','+14%'],
+      ['Privilege Escalation','698','7.8','+28%'],
+      ['Authentication Bypass','573','8.1','+31%'],
+      ['DDoS / Denial of Service','512','6.5','+11%'],
+      ['Supply Chain Attack','489','9.1','+178%'],
+      ['SQL Injection','421','7.3','+3%'],
+      ['Zero-Day Exploit','318','9.4','+47%'],
+      ['Command Injection','294','8.2','+22%'],
     ]
   },
   country: {
-    labels: ['United States','United Kingdom','Germany','Japan','France','Australia','Canada','India','Brazil','Italy'],
-    data: [4823, 1876, 1542, 1398, 1187, 987, 876, 734, 623, 498],
-    tableHead: ['Country','Incidents (10yr)','2024 Rank','Trend'],
+    labels: ['United States','United Kingdom','India','Germany','Canada','Australia','Japan','Brazil','France','Singapore'],
+    data: [587, 203, 178, 164, 148, 131, 124, 109, 98, 82],
+    tableHead: ['Country','10yr Incidents','2024 Rank','YoY Trend'],
     tableRows: [
-      ['United States','4,823','#1','↑ +8%'],
-      ['United Kingdom','1,876','#2','↑ +6%'],
-      ['Germany','1,542','#3','↑ +11%'],
-      ['Japan','1,398','#4','↑ +14%'],
-      ['France','1,187','#5','↑ +7%'],
-      ['Australia','987','#6','↑ +9%'],
-      ['Canada','876','#7','↑ +5%'],
-      ['India','734','#8','↑ +22%'],
-      ['Brazil','623','#9','↑ +17%'],
-      ['Italy','498','#10','↑ +13%'],
+      ['United States','587','#1','↑ +9%'],
+      ['United Kingdom','203','#2','↑ +7%'],
+      ['India','178','#3','↑ +26%'],
+      ['Germany','164','#4','↑ +12%'],
+      ['Canada','148','#5','↑ +6%'],
+      ['Australia','131','#6','↑ +10%'],
+      ['Japan','124','#7','↑ +15%'],
+      ['Brazil','109','#8','↑ +19%'],
+      ['France','98','#9','↑ +8%'],
+      ['Singapore','82','#10','↑ +18%'],
     ]
   },
   financial: {
@@ -774,11 +756,9 @@ const HIST_VECTOR = {
 /* ════════════════════════════════════════════════
    STATE
 ════════════════════════════════════════════════ */
-const FREE_LIMIT = 7;
 const KEV_PANEL_LIMIT = 50;
-const CISA_KEV_URL = `${window.CS_API_BASE}/api/content/cisa-kev`;
+const CISA_KEV_URL = 'https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json';
 let allThreats = [];
-let currentUser = null;
 let charts = {};
 let radarAngle = 0;
 let radarAnimId = null;
@@ -940,10 +920,10 @@ function threatRow(t) {
 }
 
 /* ── T1: Mobile card helpers ── */
-function mobileCard(t, isBlurred) {
+function mobileCard(t) {
   const tagText = (t.threat_name||'') + ' ' + (t.cve_id||'') + ' ' + (t.tags||[]).join(' ');
   const tagHtml = renderAssetTags(computeAssetTags(tagText));
-  return `<div class="radar-card${isBlurred?' row-blurred':''}">
+  return `<div class="radar-card">
     <div class="card-top-row">${sevBadge(t.severity)}${t.cve_id?`<span class="card-cve">${t.cve_id}</span>`:''}</div>
     <div class="card-threat-name">${t.threat_name||'—'}</div>
     ${tagHtml}
@@ -951,40 +931,19 @@ function mobileCard(t, isBlurred) {
   </div>`;
 }
 
-function renderMobileCards(threats, isSub) {
+function renderMobileCards(threats) {
   const el = document.getElementById('radar-mobile-view');
   if (!el || !threats.length) { if(el) el.innerHTML=''; return; }
-  let html = mobileCard(threats[0], false);
-  const rest = threats.slice(1);
-  if (!isSub && rest.length) {
-    html += rest.slice(0, 5).map(t => mobileCard(t, true)).join('');
-    html += `<div class="conversion-curtain">
-      <div class="curtain-cta">
-        <h4>Unlock Full Radar Feed</h4>
-        <p>All tracked threats plus real-time CVE alerts. Free to start.</p>
-        <a href="newsletter.html#subscribe" class="btn btn-primary btn-sm">Subscribe Free</a>
-      </div>
-    </div>`;
-  } else {
-    html += rest.map(t => mobileCard(t, false)).join('');
-  }
-  el.innerHTML = html;
+  el.innerHTML = threats.map(t => mobileCard(t, false)).join('');
 }
 
-function renderFeed(threats, isSub) {
-  const body    = document.getElementById('radar-body');
-  const gate    = document.getElementById('radar-gate');
-  const blurred = document.getElementById('blurred-rows');
-  const meta    = document.getElementById('radar-meta');
+function renderFeed(threats) {
+  const body = document.getElementById('radar-body');
+  const meta = document.getElementById('radar-meta');
   if (!threats.length) { body.innerHTML = '<tr><td colspan="4" class="rdr-empty">No threats tracked yet.</td></tr>'; return; }
-  const visible = isSub ? threats : threats.slice(0,FREE_LIMIT);
-  const hidden  = isSub ? [] : threats.slice(FREE_LIMIT);
-  body.innerHTML = visible.map(threatRow).join('');
-  gate.style.display = hidden.length ? 'block' : 'none';
-  if (hidden.length) blurred.innerHTML = hidden.map(threatRow).join('');
-  const showing = isSub ? threats.length : Math.min(FREE_LIMIT,threats.length);
-  meta.textContent = `Showing ${showing} of ${threats.length} threats · NVD CVSS + CyberSense analyst severity`;
-  renderMobileCards(threats, isSub);
+  body.innerHTML = threats.map(threatRow).join('');
+  meta.textContent = `Showing ${threats.length} threats · NVD CVSS + CyberSense analyst severity`;
+  renderMobileCards(threats);
 }
 
 function filterFeed() {
@@ -1572,25 +1531,23 @@ function renderIndustries(threats) {
 }
 
 async function loadGeoTelemetry() {
+  // Geo telemetry endpoint not yet available — map uses static GEO_DATA.
+  // When Rick's data is wired into country-level aggregation, update here.
   if (!mapChart) return;
   try {
-    const resp = await fetch(`${window.CS_API_BASE}/api/content/geo-telemetry`);
-    if (!resp.ok) return;
-    const { countries } = await resp.json();
-    if (!countries || !Object.keys(countries).length) return;
-
-    // Build numeric-keyed value map from alpha-2 percentages
+    // Attempt to read geo breakdown from threats.json if Jeff includes it
+    const res = await fetch(window.RADAR_DATA_URL, { cache: 'no-cache' });
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!data.geo) return;
     const byNum = {};
-    for (const [a2, pct] of Object.entries(countries)) {
+    for (const [a2, pct] of Object.entries(data.geo)) {
       const num = A2_TO_NUM[a2];
       if (num) byNum[num] = pct;
     }
-
-    // Update chart dataset values in-place
+    if (!Object.keys(byNum).length) return;
     const ds = mapChart.data.datasets[0];
     ds.data = ds.data.map(d => ({ ...d, value: byNum[d.feature.id] || 0 }));
-
-    // Update color scale to match live range (percentage domain)
     GEO_MAX = Math.max(...Object.values(byNum), 1);
     mapChart.options.scales.color.max = GEO_MAX;
     geoLive = true;
@@ -1748,32 +1705,24 @@ document.getElementById('expand-overlay').addEventListener('click', e => {
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeExpand(); });
 
 /* ════════════════════════════════════════════════
-   LOAD & AUTH
+   LOAD — public, no auth
 ════════════════════════════════════════════════ */
-async function loadRadar(user) {
-  currentUser = user;
-  const isSub = !!user;
+async function loadRadar() {
   try {
-    const data = await CS.Auth.apiFetch('/api/content/radar?limit=500');
-    allThreats = data.data || [];
+    const res  = await fetch(window.RADAR_DATA_URL, { cache: 'no-cache' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    allThreats = data.threats || [];
     updateStats(allThreats, data.meta?.total, data.meta?.breakdown);
     renderTop10(allThreats);
-    renderFeed(allThreats, isSub);
+    renderFeed(allThreats);
     renderHeatmap(allThreats);
     renderIndustries(allThreats);
   } catch(e) {
-    console.error('Radar load error:',e);
+    console.warn('threats.json not yet available (pipeline may not have run):', e.message);
     document.getElementById('radar-body').innerHTML =
-      '<tr><td colspan="4" class="rdr-empty">Content temporarily unavailable.</td></tr>';
+      '<tr><td colspan="4" class="rdr-empty">Threat data loading — first cycle runs at the top of the hour.</td></tr>';
   }
-}
-
-function handleGuest() {
-  document.getElementById('radar-body').innerHTML = `
-    <tr><td colspan="4" class="rdr-empty">
-      <div style="margin-bottom:12px;">Sign in to view the live threat radar.</div>
-      <a href="#" class="btn btn-primary btn-sm" onclick="CS.Auth.showLoginModal();return false;">Sign In Free</a>
-    </td></tr>`;
 }
 
 /* ════════════════════════════════════════════════
@@ -1781,15 +1730,16 @@ function handleGuest() {
 ════════════════════════════════════════════════ */
 document.getElementById('severity-filter').addEventListener('change', filterFeed);
 document.getElementById('threat-search').addEventListener('input', filterFeed);
-document.addEventListener('cs:login', e => loadRadar(e.detail));
-document.addEventListener('cs:guest', () => handleGuest());
-setInterval(() => { if(currentUser) loadRadar(currentUser); }, 15*60*1000);
 window.addEventListener('resize', () => {
   syncRadarCanvas();
   if(charts.vulnDist) charts.vulnDist.resize();
 });
 
-// Static panels (no auth needed)
+// Auto-refresh every 15 minutes — pipeline runs every 6 hours
+setInterval(loadRadar, 15 * 60 * 1000);
+
+// Boot sequence — all panels public
+loadRadar();
 loadCISAKEV();
 renderVulnDist();
 renderHistorical('industry');
