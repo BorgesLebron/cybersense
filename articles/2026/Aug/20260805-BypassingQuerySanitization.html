@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Bypassing Query Sanitization: Analyzing SQL Injection Vulnerabilities in Sequelize ORM (CVE-2026-69240)</title>
+<meta property="og:title" content="Bypassing Query Sanitization: Analyzing SQL Injection Vulnerabilities in Sequelize ORM (CVE-2026-69240)"/>
+<meta property="og:description" content="CVE-2026-69240 presents a critical SQL injection vulnerability in Sequelize ORM that bypasses query parameterization safeguards when processing Oracle Database dialect parameters. The vulnerability permits both authenticated and unauthenticated threat actors to inject arbitrary SQL commands, enabling data exfiltration, modification, and potential system compromise across enterprise Node.js application stacks."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/BypassingQuerySanitization.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Aug/20260805-BypassingQuerySanitization.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Bypassing Query Sanitization: Analyzing SQL Inject…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Bypassing Query Sanitization: Analyzing SQL Injection Vulnerabilities in Sequelize ORM (CVE-2026-69240)</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">SQL Injection</span>
+      <span class="tag-badge">Sequelize ORM</span>
+      <span class="tag-badge">CVE-2026-69240</span>
+      <span class="tag-badge">Oracle Database</span>
+      <span class="tag-badge">Node.js Security</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-critical"><strong>Severity:</strong> Critical</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: August 5, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/BypassingQuerySanitization.png" alt="Bypassing Query Sanitization: Analyzing SQL Injection Vulnerabilities in Sequelize ORM (CVE-2026-69240) — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">CVE-2026-69240 presents a critical SQL injection vulnerability in Sequelize ORM that bypasses query parameterization safeguards when processing Oracle Database dialect parameters. The vulnerability permits both authenticated and unauthenticated threat actors to inject arbitrary SQL commands, enabling data exfiltration, modification, and potential system compromise across enterprise Node.js application stacks.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> Active exploitation has been confirmed. Organizations operating Node.js applications with Oracle Database backends using affected Sequelize versions must immediately inventory vulnerable deployments, apply available security patches, and implement compensating input validation controls. The critical institutional lesson is that ORM adoption cannot substitute for application-layer security discipline—parameterized queries are architectural requirements, not delegated security responsibilities.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> CVE-2026-69240 exploits improper input sanitization in Sequelize's Oracle Database dialect query construction logic, demonstrating that ORM-layer protections require complementary application-layer validation controls. Successful exploitation enables complete data exfiltration, modification, and potential privilege escalation within affected database environments.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2026-69240 was identified in Sequelize ORM versions prior to the patched release, with disclosure coordinated through responsible disclosure channels. The vulnerability exists in Sequelize's Oracle Database dialect implementation—a critical flaw in how the ORM constructs and validates parameterized queries when handling Oracle-specific SQL syntax. Patches were made available through GitHub Security Advisory (GHSA-v8fg-2rw7-q452) and reflected in updated Sequelize releases published to npm. The affected version range spans multiple minor releases across Sequelize v4, v5, and v6, creating broad exposure across enterprise deployments that have not completed dependency updates.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability operates through a bypass of Sequelize's query parameterization logic specific to Oracle Database dialect processing. While Sequelize implements prepared statements as a core security mechanism, the Oracle dialect handler contains a flaw in parameter processing that permits specially-crafted input sequences to bypass sanitization controls. An attacker submits input containing sequences that appear neutralized by Sequelize's parameterization layer but are processed differently by the Oracle dialect handler. Rather than treating the input as a literal string parameter, certain code paths within the dialect implementation construct queries where portions of attacker-supplied input are interpreted as executable SQL syntax. This occurs within dialect/oracle/query-generator.js and related query construction modules, where Oracle-specific SQL formatting diverges from standard parameterized patterns used for other database backends.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability impacts Node.js applications using affected Sequelize versions across diverse deployment contexts including Express.js and Nest.js applications utilizing Sequelize for data access; Koa.js and similar Node.js framework implementations; monorepo architectures where shared Sequelize dependencies create cascading exposure; and applications deployed on on-premises Oracle Database, AWS RDS for Oracle, Oracle Cloud Database, and hybrid cloud environments.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">Security and Compliance Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">SQL injection remains among the most consequential attack vectors in enterprise environments. CVE-2026-69240 is significant because it demonstrates a persistent institutional vulnerability: the misplaced confidence that ORM adoption substitutes for application-layer security controls. Data exfiltration triggers breach notification obligations under GDPR, HIPAA, CCPA, and industry-specific regulations. Organizations must assess regulatory applicability based on exposed data types and calculate compliance implications. SOC 2 Type II audits will scrutinize vulnerability response timelines and remediation documentation.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Development and Operations Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Successful exploitation enables complete database disclosure, including sensitive personally identifiable information (PII), financial data, healthcare records, and intellectual property. Attackers can also execute INSERT, UPDATE, and DELETE operations, modifying or deleting records and corrupting data integrity. SQL injection access can escalate within the database layer using Oracle-specific features to achieve administrative database access. Attackers can establish persistence through hidden database entries or scheduled tasks.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Database and Infrastructure Administrators</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">SQL injection access facilitates reconnaissance of data schemas, enumeration of connected systems, and potential operating system compromise if Oracle Database is configured with elevated OS-level privileges. Time-to-exploitation metrics indicate organizations have a narrow window (typically hours to days post-disclosure) before active attackers intensify reconnaissance and exploitation efforts on vulnerable infrastructure.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (0–48 Hours):</strong> Development teams face immediate operational friction from CVE-2026-69240 remediation. Teams must inventory Sequelize dependencies, assess patch compatibility, execute testing protocols, and coordinate deployment timelines with operations and security counterparts. The vulnerability highlights gaps in development security practices where many teams lack security-focused code review processes designed to identify ORM-layer vulnerabilities. Standard code reviews verify parameterized query usage without examining dialect-specific edge cases or malformed input handling.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short-term (1–7 Days):</strong> Oracle Database administrators must assess current database role-based access controls and query execution privileges. Query audit logging becomes critical for incident detection and forensic analysis. Organizations relying on minimal query logging will lack visibility into exploitation attempts and post-compromise attacker activity. Connection pooling, session management, and privilege elevation controls require review to ensure rapid identification and termination of compromised sessions. Detection of CVE-2026-69240 exploitation presents significant challenges as successful SQL injection may be indistinguishable from legitimate queries in monitoring systems lacking database-aware detection logic.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Medium-term (1–4 Weeks):</strong> Organizations must conduct security-focused code review training emphasizing ORM limitations and non-negotiable application-layer validation. Update code review checklists to specifically address SQL injection risks despite ORM usage. Implement automated security scanning (SAST) in development pipelines with SQL injection pattern detection. Enable Oracle Database audit logging with query-level detail and analyze for SQL injection patterns. Implement database activity monitoring (DAM) tools for real-time threat detection and analyze Oracle Database audit logs for evidence of post-disclosure exploitation.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Strategic (1+ Months):</strong> Organizations should assess whether Sequelize remains appropriate or whether architectural changes (query builder replacement, stored procedures for complex data access, microservices with database isolation) better align with security and operational requirements. Implement database role segregation with least-privilege principles where application service accounts possess only permissions for normal operation. Formalize vulnerability management service level agreements defining response timelines by severity and establish mandatory dependency update review processes with security assessment before production deployment.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul><li>1 - Inventory vulnerable systems by executing automated dependency scanning using npm audit, Snyk, or equivalent tools across all Node.js codebases and infrastructure-as-code repositories. Identify all Sequelize installations and confirm versions against CVE-2026-69240 affected ranges. Document hosting environments and confirm Oracle Database backend usage.</li>
+        <li>2 - Establish response command structure by designating a vulnerability coordinator and assembling a cross-functional team including development lead, operations representative, database administrator, and security member. Define communication protocols and escalation procedures.</li>
+        <li>3 - Prepare patch deployment plan by identifying available patches from GitHub Security Advisory and Sequelize release notes. Verify patch compatibility with current Node.js versions and dependencies. Schedule patching for non-production environments first, followed by staged production rollout.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Intermediate Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with established security processes and monitoring capabilities.</p>
+      <ul><li>1 - Deploy patches systematically across all identified systems, prioritizing production applications accepting untrusted user input. Implement staged rollout with performance monitoring and rapid rollback capabilities. Test patches in staging environments replicating production workloads before production deployment.</li>
+        <li>2 - Implement input validation controls by deploying application-layer input validation on all parameters passed to Sequelize queries, regardless of patch status. Implement whitelist-based validation where feasible, rejecting inputs containing SQL metacharacters for parameters not requiring them. Deploy Web Application Firewalls (WAF) with SQL injection signature detection and enable Oracle Database statement-level inspection.</li>
+        <li>3 - Conduct vulnerability assessment by executing penetration testing against Oracle Database connectivity to verify SQL injection pathways are closed post-patching. Review Sequelize initialization code and query construction patterns for additional injection vectors or dangerous patterns.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Advanced Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with comprehensive security programs and forensic capabilities.</p>
+      <ul><li>1 - Deploy enhanced monitoring by enabling Oracle Database audit logging with query-level detail and analyzing for SQL injection patterns including UNION-based injection, time-based signatures, and failed authentication attempts. Tune intrusion detection systems for SQL injection signatures and establish baseline query pattern analysis. Implement database activity monitoring (DAM) tools for real-time threat detection.</li>
+        <li>2 - Conduct forensic investigation by analyzing Oracle Database audit logs and transaction histories for evidence of post-disclosure exploitation. Search for suspicious query patterns, data exfiltration indicators, and schema modifications. Review database backup integrity against pre-vulnerability baselines to identify unauthorized changes.</li>
+        <li>3 - Harden development processes through security-focused code review training emphasizing ORM limitations and non-negotiable application-layer validation. Update code review checklists to specifically address SQL injection risks despite ORM usage. Implement automated security scanning (SAST) in development pipelines with SQL injection pattern detection.</li>
+        <li>4 - Evaluate ORM architectural strategy by assessing whether Sequelize remains appropriate or whether architectural changes (query builder replacement, stored procedures for complex data access, microservices with database isolation) better align with security and operational requirements.</li>
+        <li>5 - Restructure database access control by implementing database role segregation with least-privilege principles where application service accounts possess only permissions for normal operation, eliminating administrative access even if SQL injection occurs. Separate read-only and read-write access across different connections.</li>
+        <li>6 - Establish vulnerability governance framework by formalizing vulnerability management service level agreements defining response timelines by severity. Establish mandatory dependency update review processes with security assessment before production deployment. Create security requirements for third-party library evaluation.</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2026-69240 is not exceptional in its technical mechanics—SQL injection is a well-understood attack category with established defenses. Its significance lies in what it reveals about institutional security maturity: the persistent gap between abstracting security complexity through technology choices and eliminating underlying risks through disciplined security practices.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability serves as a calibration point for organizational resilience. It tests whether development teams understand that parameterized queries are architectural requirements rather than delegated responsibilities. It reveals whether security operations can detect sophisticated database-layer attacks. It exposes whether compliance frameworks have matured beyond checkbox-based vulnerability management.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Organizations executing the recommended remediation pathway systematically—immediate patching combined with compensating controls, forensic investigation, and long-term governance enhancement—will enhance institutional resilience. Those treating remediation as a tactical incident will face recurrence of analogous vulnerabilities across future technology choices.</p>
+    <div class="pull-quote">"Technological abstractions reduce but do not eliminate security responsibilities. Discipline in applying security principles—validation, least privilege, detection, and response—regardless of abstraction layers, remains the prerequisite for sustained resilience."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2026-69240</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">9.8 CRITICAL</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">CWE-89: Improper Neutralization of Special Elements used in an SQL Command (SQL Injection)</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">August 5, 2026; coordinated disclosure via GitHub Security Advisory GHSA-v8fg-2rw7-q452</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Active exploitation confirmed; threat actor campaigns detected; time-to-exploitation measured in hours post-disclosure; vulnerability scanning activity ongoing across internet-facing applications</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Network; HTTP/HTTPS API endpoints; web-accessible database interfaces; any application interface accepting user input passed to Sequelize queries</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Node.js v12.x, v14.x, v16.x, v18.x, and later versions</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Sequelize ORM versions prior to patched release (v4, v5, v6); specific vulnerability in dialect/oracle/query-generator.js and related query parameter handling logic</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Oracle Database (all versions) deployed on-premises, cloud-hosted (AWS RDS, Oracle Cloud), and hybrid cloud environments</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">From public disclosure until successful patch deployment and verification across all affected systems; narrow window of hours to days before active exploitation intensifies</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
