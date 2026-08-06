@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Injecting Workflow Commands: Analyzing Command Injection in PraisonAI GitHub Actions (CVE-2026-48168)</title>
+<meta property="og:title" content="Injecting Workflow Commands: Analyzing Command Injection in PraisonAI GitHub Actions (CVE-2026-48168)"/>
+<meta property="og:description" content="The discovery of CVE-2026-48168 in PraisonAI's GitHub Actions integration reveals a critical vulnerability in automated AI model deployment pipelines that enables arbitrary command execution within CI/CD runner environments. The flaw stems from insufficient input sanitization in workflow parameters, permitting attackers to inject malicious commands with runner-level privileges."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/InjectingWorkflowCommands.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Aug/20260807-InjectingWorkflowCommands.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Injecting Workflow Commands: Analyzing Command Inj…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Injecting Workflow Commands: Analyzing Command Injection in PraisonAI GitHub Actions (CVE-2026-48168)</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">Command Injection</span>
+      <span class="tag-badge">GitHub Actions</span>
+      <span class="tag-badge">CI/CD Security</span>
+      <span class="tag-badge">AI Orchestration</span>
+      <span class="tag-badge">Supply Chain Risk</span>
+      <span class="tag-badge">Privilege Escalation</span>
+      <span class="tag-badge">DevOps Vulnerability</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-high"><strong>Severity:</strong> High</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: August 7, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/InjectingWorkflowCommands.png" alt="Injecting Workflow Commands: Analyzing Command Injection in PraisonAI GitHub Actions (CVE-2026-48168) — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">The discovery of CVE-2026-48168 in PraisonAI's GitHub Actions integration reveals a critical vulnerability in automated AI model deployment pipelines that enables arbitrary command execution within CI/CD runner environments. The flaw stems from insufficient input sanitization in workflow parameters, permitting attackers to inject malicious commands with runner-level privileges.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> Organizations deploying PraisonAI through GitHub Actions—particularly those managing multi-stage deployment pipelines or distributing build artifacts—face immediate risk of pipeline compromise, secret exposure, and supply chain contamination. Immediate action includes inventory of affected deployments, audit log review, and prioritized patching. This vulnerability exemplifies a systemic risk class affecting open-source AI orchestration tools and underscores the necessity for input validation enforcement at CI/CD workflow trigger boundaries.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> PraisonAI's GitHub Actions workflow fails to sanitize user-supplied input parameters before passing them to shell execution contexts, permitting attackers to inject arbitrary commands that execute with GitHub Actions runner privileges, potentially compromising downstream artifact repositories, secret management systems, and production deployment targets.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">PraisonAI, an open-source AI orchestration framework designed to streamline multi-agent model deployment, contained a command injection vulnerability in its GitHub Actions workflow integration. The vulnerability was identified in early August 2026 and disclosed through coordinated vulnerability processes. GitHub issued an official security advisory (GHSA-xp85-6wwf-r67c) on August 7, 2026, following responsible disclosure protocols. The CVE was registered as CVE-2026-48168 with a CVSS v3.1 score of 8.8, reflecting the severity and exploitability of the flaw.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">PraisonAI's GitHub Actions workflow automates AI agent and model deployment by accepting user-supplied input parameters through workflow triggers. These parameters—intended to configure deployment options, specify model versions, or direct orchestration logic—are processed through shell commands executed within the Actions runner environment. The vulnerability arises because user-supplied parameters are passed directly to shell execution contexts without adequate input validation or sanitization. When a workflow is triggered with malicious input, an attacker can inject shell metacharacters and command sequences that are interpreted as executable commands rather than literal string values.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">PraisonAI versions prior to the security patch are vulnerable to exploitation. The vulnerability affects workflow files bundled with the main PraisonAI GitHub Actions integration, commonly used by organizations automating AI model deployment pipelines. Both cloud-hosted and self-hosted GitHub Actions runners are vulnerable when executing the affected workflow configurations. Any organization using PraisonAI for AI agent orchestration through GitHub Actions is in scope, particularly those leveraging automated continuous integration and deployment of AI models.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Exploitation requires either repository write access or the ability to manipulate workflow trigger parameters through pull request comments or manual workflow dispatch inputs. For externally accessible repositories or those with permissive access controls, the attack surface is substantially larger. Exploitation indicators appear in GitHub Actions audit logs as unexpected command outputs, unusual shell process spawning within workflow runners, outbound network connections originating from Actions runners, or modifications to workflow artifacts that differ from expected build outputs.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">AI and Machine Learning Organizations</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Organizations deploying PraisonAI for multi-agent model orchestration face direct risk. Compromise of these pipelines affects both proprietary model development and published research artifacts.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Financial Services and Regulated Sectors</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Organizations in regulated industries using PraisonAI for model governance or deployment workflows face compounded risk: pipeline compromise affects audit trails, model provenance documentation, and regulatory compliance demonstrations.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Open-Source Maintainers</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Projects using PraisonAI within their own build pipelines or distributed via GitHub Actions face direct risk to release artifacts and user base. A compromised build pipeline can distribute malicious binaries or containers to end users.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Enterprise DevOps and GitHub Enterprise Administrators</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Organizations managing multiple repositories and teams across GitHub platforms face risk of cross-organizational lateral movement if the vulnerability is exploited to steal GitHub tokens with organizational scope.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (0-24 hours):</strong> Identify all PraisonAI deployments across organizational GitHub instances and document affected versions. Disable vulnerable workflows if operationally safe or restrict triggers to trusted internal sources. Review audit logs for exploitation indicators. If evidence of compromise exists, initiate incident response immediately.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short-term (1-7 days):</strong> Apply available security patches to PraisonAI instances across all environments. Validate patch deployment and verify version strings. Conduct integrity validation on recent artifacts and rotate credentials. Implement input validation enforcement within affected workflows.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Medium-term (1-4 weeks):</strong> Deploy enhanced monitoring and logging to CI/CD infrastructure. Implement GitHub Actions security scanning tools to identify similar vulnerabilities in custom workflows. Conduct code review of internal GitHub Actions workflow definitions.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Ongoing:</strong> Maintain continuous monitoring, keep patched versions across all environments, and monitor for related vulnerabilities in the GitHub Actions ecosystem.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Essential Actions for All Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Fundamental remediation steps required for any organization using PraisonAI.</p>
+      <ul><li>1 - Document all repositories and GitHub instances using PraisonAI; identify which repositories have GitHub Actions workflows enabled and use the vulnerable workflow configurations</li>
+        <li>2 - Apply the security patch to all PraisonAI instances as soon as patches are available and validated; prioritize production and artifact-generating workflows first</li>
+        <li>3 - Examine GitHub Actions audit logs for the vulnerability window for suspicious workflow executions; document findings for incident response purposes</li>
+        <li>4 - Rotate GitHub tokens, repository secrets, and credentials associated with affected workflows; establish new tokens with minimal necessary scope and permissions</li>
+        <li>5 - For artifacts distributed during the vulnerability window, perform manual inspection or cryptographic validation to confirm integrity</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Enhanced Controls for Technically Mature Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Advanced security measures for organizations with established DevOps practices.</p>
+      <ul><li>1 - Implement standardized input validation for all GitHub Actions workflows accepting user-supplied parameters; establish organization-wide guidelines requiring validation before shell execution</li>
+        <li>2 - Deploy secrets management solutions to GitHub Actions workflows; reduce reliance on GitHub's native repository secrets through temporary credential issuance and least-privilege access</li>
+        <li>3 - For self-hosted GitHub Actions runners, implement network segmentation to restrict outbound connections to approved services and IP ranges</li>
+        <li>4 - Implement cryptographic signing of artifacts produced by CI/CD workflows; verify signatures in downstream deployment systems before deploying artifacts</li>
+        <li>5 - Enable GitHub's native code scanning, secret scanning, and dependency scanning features across all repositories to identify similar input sanitization issues</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Comprehensive Hardening for High-Risk Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Extensive governance and detection capabilities for mission-critical environments.</p>
+      <ul><li>1 - Implement GitHub Actions policies requiring approval for workflow changes affecting production artifacts or secret access; use branch protection rules and workflow authorization policies</li>
+        <li>2 - Deploy Endpoint Detection and Response (EDR) agents to self-hosted GitHub Actions runners to provide continuous process monitoring, behavioral analysis, and threat detection</li>
+        <li>3 - Establish formal governance processes for evaluating and approving third-party tools before integration into CI/CD pipelines; establish assessment criteria and conduct periodic reassessment</li>
+        <li>4 - Conduct threat modeling exercises specifically for CI/CD pipelines to identify potential attack vectors, exploitable vulnerabilities, and detection/response capabilities</li>
+        <li>5 - Develop organization-specific runbooks for CI/CD compromise scenarios, including artifact integrity validation procedures, credential rotation processes, and forensic analysis requirements</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The PraisonAI command injection vulnerability exemplifies a broadening attack surface as organizations increasingly delegate critical infrastructure operations to automation frameworks and CI/CD platforms. The vulnerability's positioning—enabling compromise at the orchestration layer rather than application code itself—demonstrates that security evaluation of DevOps infrastructure and deployment frameworks must encompass input validation practices, privilege models, and secret access controls within automation environments.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">As AI orchestration tools become more deeply integrated into organizational infrastructure, the consequences of CI/CD compromise expand correspondingly. Organizations deploying PraisonAI or similar AI orchestration frameworks should view this vulnerability as an opportunity to rigorously evaluate their CI/CD security posture, implement comprehensive input validation practices, and establish detection and response capabilities adequate to these systems' criticality. The remediation window is limited; early action on inventory, patching, and credential rotation directly reduces institutional risk exposure. Beyond immediate remediation, the institutional lesson is clear: automation infrastructure deserves the same security rigor, governance scrutiny, and incident response capability as the applications it deploys.</p>
+    <div class="pull-quote">"Automation infrastructure deserves the same security rigor, governance scrutiny, and incident response capability as the applications it deploys."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2026-48168</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">8.8 (HIGH); CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">CWE-78: Improper Neutralization of Special Elements used in an OS Command (OS Command Injection); CWE-862: Missing Authorization</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">August 7, 2026</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Limited public exploitation reported as of publication date. Reconnaissance and exploitation activity anticipated following public disclosure.</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Network-based; requires user interaction (workflow trigger with malicious parameters) or repository write access</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">GitHub Actions (cloud-hosted and self-hosted runners)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">PraisonAI (open-source AI orchestration framework)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">CI/CD pipeline execution contexts; repository-hosted workflows; organizations using PraisonAI for AI model orchestration and deployment</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">Public disclosure to patch availability: approximately 14-21 days. Organizations should prioritize patching within this window.</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
