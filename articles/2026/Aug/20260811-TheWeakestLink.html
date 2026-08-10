@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | The Weakest Link: Analyzing Operator Fatigue and Automation Bias in Human-AI Security Systems</title>
+<meta property="og:title" content="The Weakest Link: Analyzing Operator Fatigue and Automation Bias in Human-AI Security Systems"/>
+<meta property="og:description" content="Security organizations have systematically inverted the traditional human as failsafe model through integration of AI-driven detection and response systems. Rather than eliminating human vulnerability, this shift has relocated it into a lower-visibility domain where operator fatigue, cognitive overload, and automation bias now constitute a primary vulnerability distinct from technical exploits."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/TheWeakestLink.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Aug/20260811-TheWeakestLink.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">The Weakest Link: Analyzing Operator Fatigue and A…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-dig">DIG</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">The Weakest Link: Analyzing Operator Fatigue and Automation Bias in Human-AI Security Systems</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">Automation Bias</span>
+      <span class="tag-badge">SOC Governance</span>
+      <span class="tag-badge">Human-AI Collaboration</span>
+      <span class="tag-badge">Decision Quality</span>
+      <span class="tag-badge">Operator Fatigue</span>
+      <span class="tag-badge">AI Risk Management</span>
+      <span class="tag-badge">Alert Triage</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-info"><strong>Severity:</strong> Informational</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: Aug 11, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/TheWeakestLink.png" alt="The Weakest Link: Analyzing Operator Fatigue and Automation Bias in Human-AI Security Systems — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">Security organizations have systematically inverted the traditional human as failsafe model through integration of AI-driven detection and response systems. Rather than eliminating human vulnerability, this shift has relocated it into a lower-visibility domain where operator fatigue, cognitive overload, and automation bias now constitute a primary vulnerability distinct from technical exploits.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">As operators increasingly accept AI-generated alerts without independent verification, decision dependencies on incompletely trained systems compound, creating organizational blind spots precisely where human judgment remains irreplaceable. Organizations believing they have solved SOC staffing scarcity through AI have instead created new governance and decision-quality vulnerabilities requiring explicit remediation.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> Automation bias in security operations systematically degrades human decision quality at the precise moment when human judgment remains irreplaceable: operators increasingly accept AI-generated alerts without independent verification, create decision-dependencies on systems trained on incomplete threat models, and experience cognitive fatigue that compounds their susceptibility to both legitimate alert failures and adversary-crafted automation exploitation attacks.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Between 2020 and 2024, security organizations implemented AI-driven systems primarily to address alert fatigue. Initial deployments focused on alert ranking, false-positive reduction, and incident correlation. Alert acceptance rates increased from approximately 65% in 2023 to 82% in 2025, while operator override rates dropped from 18% in 2022 to 8% in 2025, despite flat or increasing false-positive rates in underlying detection models.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Organizational guidance increasingly framed AI systems as authoritative. Workload metrics incentivized rapid decision-making, penalizing operators who spent time verifying alerts before accepting them. Alert volume growth significantly outpaced SOC staffing expansion. Operators managing 400-500 alerts per shift lacked the cognitive bandwidth to independently verify AI recommendations.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">What emerged was not a reduction in human decision-making, but a systematic degradation of human decision quality precisely where humans remained the final authority. Operators retained formal accountability for alert acceptance, but their actual decision-making capacity had been compressed into a binary choice: trust the AI or override it.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">Organizational Leaders and Chief Information Security Officers</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Regulatory frameworks including SEC guidance on AI governance, GDPR Article 22, and HIPAA's minimum necessary standards increasingly require evidence of human oversight in automated decision systems. Widespread automation bias creates direct compliance exposure and potential liability for breach causation. Organizations may face negligence allegations for failure to maintain adequate information security controls or human oversight.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">SOC Managers and Security Operations Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Automation bias creates concrete operational vulnerabilities including detection system blind spots, fatigue-driven performance degradation, explainability deficits, and cascading failures in incident response. AI-driven detection systems optimized for high-volume alert ranking perform substantially worse on low-volume, high-severity threats such as zero-day exploits and supply-chain compromises.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Threat Analysts and Incident Responders</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Operators experiencing sustained alert fatigue show measurable degradation in override decision quality, secondary verification attention, and critical thinking. When operators manage more than 400 alerts per shift, decision accuracy exponentially degrades, particularly for marginal cases where human judgment is most valuable. Over-reliance on confidence scores without independent verification reduces the capability to detect systematic blind spots.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Technology Vendors and Procurement Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Organizations have invested heavily in AI-driven security tools often without independent verification of whether those tools actually reduce breach risk. Automation bias creates the possibility that purchased tools have actually increased organizational vulnerability by creating false confidence in detection coverage and misaligned incentive structures.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (30-60 days):</strong> Explainability requirements and alert verification workflows must be established. Mandate that AI-driven security systems provide causal explanations for recommendations. Implement mandatory secondary verification workflows for all AI-flagged incidents above severity thresholds. Conduct operator training specific to AI limitations, false-positive rates, training data biases, and confidence score calibration issues.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Near-term (60-180 days):</strong> Systemic governance frameworks must be implemented including adoption of NIST AI Risk Management Framework for security operations. Establish documented responsibility matrices for which security decisions require human judgment, which can be fully automated, and which require human verification. Conduct quarterly bias audits of AI-recommended decisions and establish post-breach analysis protocols that explicitly analyze automation bias contributions.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Strategic (180-365 days):</strong> Vendor risk assessment processes must be expanded to require documentation of automation bias risk mitigation, real-world false-negative rates, operator override patterns, and confidence score calibration against ground-truth data. Invest in workforce capability development emphasizing analyst judgment and decision-making quality. Fund research on explainable AI applications specific to security operations and establish metrics for measuring automation bias trends.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Immediate Operational Controls</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and AI-assisted detection systems.</p>
+      <ul><li>1 - Mandate that AI-driven security systems provide causal explanations for recommendations beyond confidence scores alone. Implement mandatory secondary verification workflows for all AI-flagged incidents above severity thresholds requiring independent analysis.</li>
+        <li>2 - Conduct operator training specific to AI limitations: false-positive rates of production systems, documented training data biases, known adversarial edge cases, and confidence score calibration issues. Ensure operators understand the epistemological difference between AI confidence and actual threat reality.</li>
+        <li>3 - Implement automated alert volume tracking per operator with flagging when shifts exceed 350 alerts. Establish transparent workload measurement to identify where operator fatigue is degrading decision quality.</li>
+        <li>4 - Establish mandatory override decision logging requiring operators to document why they accepted or rejected AI recommendations. Create audit trails to identify systematic bias patterns and provide data for post-incident analysis.</li>
+        <li>5 - Replace traditional SOC metrics with decision-quality metrics. Establish decisions validated per shift as a primary metric, measuring the percentage of decisions informed by verification or secondary analysis.</li>
+        <li>6 - Establish secondary metrics including false-negative rate per AI system, operator fatigue scores, and decision-quality metrics on ambiguous alerts. Correlate metrics over time to identify whether AI confidence correlates with degraded human decision quality.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Systemic Governance</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations implementing enterprise-wide human-AI collaboration standards and governance.</p>
+      <ul><li>1 - Formally adopt NIST AI Risk Management Framework governance controls specific to security operations. Establish documented responsibility matrices distinguishing which security decisions require human judgment, which can be fully automated, and which require human verification of automation outputs.</li>
+        <li>2 - Establish explicit incident-response protocols distinguishing between AI system generation of incorrect recommendations and operator acceptance of incorrect recommendations without appropriate verification. These are distinct failure modes requiring different remediation approaches.</li>
+        <li>3 - Conduct quarterly bias audits of AI-recommended decisions examining whether certain threat types are systematically over- or under-flagged and whether threat actors are systematically prioritized or deprioritized.</li>
+        <li>4 - Establish post-breach analysis protocols that explicitly analyze automation bias contributions when breaches involve alerts accepted on AI recommendation. Analyze whether alert triage decisions were appropriate given available information and whether operator fatigue contributed.</li>
+        <li>5 - Reinvest in human-led threat hunting independent of AI systems. Allocate 15-20% of SOC capacity to threat hunting for threats AI systems are unlikely to detect and for developing detection signatures for emerging threats.</li>
+        <li>6 - Update security tool procurement processes to require vendors to provide evidence of automation bias risk mitigation including real-world false-negative rates, operator override patterns from customers, explainability mechanisms, and training data composition.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Strategic Transformation</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations pursuing comprehensive vendor risk assessment expansion and workforce capability investment.</p>
+      <ul><li>1 - Establish vendor contractual requirements for transparency including documentation about model limitations, training data characteristics, known biases, and adversarial edge cases. Require vendors to support post-deployment bias audits and provide tools for measuring automation bias.</li>
+        <li>2 - Include automation bias risk assessment in security tool RFPs treating explainability and bias mitigation as primary selection criteria, not secondary features.</li>
+        <li>3 - Invest in operator training emphasizing AI literacy, understanding of model limitations, confidence score interpretation, bias mechanisms, and decision psychology including recognition of cognitive fatigue and decision bias.</li>
+        <li>4 - Establish career pathways for SOC analysts emphasizing judgment and decision-making quality rather than alert resolution volume. Recognize experienced analysts who develop strong override judgment as valuable organizational assets.</li>
+        <li>5 - Create specialized analyst roles explicitly focused on threat hunting, explainability validation, and AI system auditing. Structure compensation and advancement to retain expertise.</li>
+        <li>6 - Fund internal or industry research on explainable AI applications specific to security operations. Develop organizational baselines for healthy human-AI collaboration. Invest in tools for measuring automation bias and operator decision quality with long-term metrics tracking whether decision quality is improving or degrading.</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Automation bias in security operations represents a second-order consequence of well-intentioned efforts to address alert fatigue and SOC staffing constraints through AI-driven detection. The vulnerability is not that humans have been eliminated from security decision-making but that human decision-making has been degraded through cognitive fatigue, reduced verification discipline, and systematic over-reliance on imperfect automation.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The path to institutional resilience requires explicit acknowledgment that AI has not solved the human decision-making problem but has relocated that problem into a lower-visibility domain where the mechanisms of failure are psychological rather than technical. Organizations that address automation bias through explicit governance, workload redesign, and investment in analyst capability will develop security operations with genuine resilience.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Organizations that continue to treat AI as a solution to human limitation without addressing human-AI collaboration quality will discover that purchased resilience has created new organizational vulnerability.</p>
+    <div class="pull-quote">"The weakest link in modern security operations is not the human operator; it is the failure to govern human-AI collaboration."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">N/A (Systemic governance and organizational vulnerability; not specific exploit or vulnerability identifier)</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">N/A (Not applicable to organizational and governance vulnerabilities)</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">Operational / Governance / Organizational Vulnerability</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">Ongoing (2024–2026); no single announcement event; documented through breach post-mortems and SOC performance analysis</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Documented in breach incident reviews; SOC performance metrics analysis; peer-reviewed research on automation bias in security operations (2024–2026)</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Indirect: adversary-crafted alerts, log injection attacks, false-alert campaigns designed to degrade operator confidence calibration and override rates; does not require direct technical exploitation</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">All SIEM and SOC platforms with AI-assisted detection components including Splunk Enterprise Security, Microsoft Sentinel, CrowdStrike Falcon, Elastic Security, IBM QRadar</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Any security tool with AI-driven alert prioritization, automated incident classification, or confidence-score-based recommendations; MDR services with AI-driven alert triage; automated incident response platforms</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Security operations centers (SOCs); incident response teams; vulnerability management functions; any organizational function relying on AI-assisted decision systems for high-consequence decisions</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">Continuous and expanding; worsens with increased alert volume, extended operator shift duration, organizational messaging prioritizing alert resolution velocity over decision quality, and deployment of AI systems without governance of human-AI collaboration</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
