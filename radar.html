@@ -46,7 +46,7 @@ h1,h2,h3{margin:0}
 .hero::after{content:'';position:absolute;inset:0;background:radial-gradient(600px 200px at 15% 0%,rgba(0,212,255,0.06),transparent 70%);pointer-events:none}
 .hero-inner{max-width:var(--maxw);margin:0 auto;position:relative;z-index:1}
 .eyebrow{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--cyan);margin-bottom:10px}
-.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--orange);box-shadow:0 0 8px var(--red);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 .hero h1{font-size:clamp(28px,4.5vw,44px);font-weight:800;color:#fff;letter-spacing:-.5px}
 .hero p{max-width:620px;color:var(--dim);margin:12px 0 0;line-height:1.6}
@@ -118,6 +118,10 @@ table.feed{width:100%;border-collapse:collapse}
 .brief:hover{text-decoration:underline}
 .pending{font-size:11px;color:var(--dimmer);white-space:nowrap}
 .feed-meta{padding:11px 16px;font-size:11px;color:var(--dim);border-top:1px solid var(--border)}
+.feed td.pub{white-space:nowrap;color:var(--dim);font-size:12px}
+.load-more-wrap{padding:10px 16px;text-align:center;border-top:1px solid var(--border)}
+.load-more{background:rgba(0,212,255,0.08);border:1px solid rgba(0,212,255,0.3);color:var(--cyan);font-size:12px;font-weight:600;padding:8px 20px;border-radius:3px;cursor:pointer;letter-spacing:.3px;font-family:inherit}
+.load-more:hover{background:rgba(0,212,255,0.16)}
 .empty{padding:40px 16px;text-align:center;color:var(--dim)}
 
 /* ── Heatmap ── */
@@ -211,9 +215,12 @@ footer{border-top:1px solid var(--border);padding:44px 24px 30px;background:var(
   </div>
 </nav>
 <div class="nav-drawer" id="drawer">
-  <a href="index.html">Home</a><a href="about.html">About</a>
-  <a href="radar.html">Radar</a><a href="intel.html">Intel</a>
-  <a href="newsletter.html">Newsletter</a><a href="resources.html">Resources</a>
+  <a href="index.html">Home</a>
+  <a href="about.html">About</a>
+  <a href="radar.html">Radar</a>
+  <a href="intel.html">Intel</a>
+  <a href="newsletter.html">Newsletter</a>
+  <a href="resources.html">Resources</a>
 </div>
 
 <!-- HERO -->
@@ -223,7 +230,6 @@ footer{border-top:1px solid var(--border);padding:44px 24px 30px;background:var(
     <h1>Threat Radar</h1>
     <p>Active vulnerabilities, tracked CVEs, and known-exploited threats — sourced from NVD and the CISA KEV catalog, refreshed every cycle.</p>
   </div>
-</section>
 
 <!-- STATS -->
 <div class="stats">
@@ -259,12 +265,13 @@ footer{border-top:1px solid var(--border);padding:44px 24px 30px;background:var(
     </div>
     <div class="feed-scroll">
       <table class="feed">
-        <thead><tr><th>Severity</th><th class="th-name">Threat</th><th style="text-align:right">CVSS</th><th>Brief</th></tr></thead>
+        <thead><tr><th>Severity</th><th class="th-name">Threat</th><th style="text-align:right">CVSS</th><th>Published</th><th>Brief</th></tr></thead>
         <tbody id="feed-body">
-          <tr><td colspan="4" class="empty">Loading live threat data…</td></tr>
+          <tr><td colspan="5" class="empty">Loading live threat data…</td></tr>
         </tbody>
       </table>
     </div>
+    <div class="load-more-wrap"><button id="load-more" class="load-more" type="button" style="display:none"></button></div>
     <div class="feed-meta" id="feed-meta"></div>
   </section>
 
@@ -293,9 +300,7 @@ footer{border-top:1px solid var(--border);padding:44px 24px 30px;background:var(
     <div class="kev-scroll" id="kev-list"><div class="empty">Loading CISA KEV catalog…</div></div>
     <div class="kev-metabar"><span id="kev-meta-left"></span><span id="kev-meta-right"></span></div>
   </section>
-
 </main>
-
 <footer>
   <div class="foot-inner">
     <div>
@@ -330,7 +335,7 @@ footer{border-top:1px solid var(--border);padding:44px 24px 30px;background:var(
 /* ════════════════════════════════════════════
    CONFIG
 ════════════════════════════════════════════ */
-window.CS_API_BASE = window.CS_API_BASE || 'https://cybersense-radar-production.up.railway.app';
+window.CS_API_BASE = window.CS_API_BASE || 'https://api.cybersense.solutions';
 const API = window.CS_API_BASE;
 const KEV_PANEL_LIMIT = 60;
 
@@ -339,6 +344,8 @@ const KEV_PANEL_LIMIT = 60;
 ════════════════════════════════════════════ */
 let allThreats = [];
 let filters = { sev: 'all', kevOnly: false, q: '' };
+const FEED_PAGE = 100;          // rows revealed per page
+let visibleCount = FEED_PAGE;   // grows via Load more; resets on filter change
 let kevData = [];
 let kevLive = false;
 
@@ -439,6 +446,7 @@ function feedRow(t){
       ${tags?`<div class="tags">${tags}</div>`:''}
     </td>
     <td class="cvss">${cvss}</td>
+    <td class="pub">${fmtPub(t.published_at)}</td>
     <td>${brief}</td>
   </tr>`;
 }
@@ -447,12 +455,21 @@ function renderFeed(){
   const rows = applyFilters();
   const body = document.getElementById('feed-body');
   if (!rows.length){
-    body.innerHTML = `<tr><td colspan="4" class="empty">No threats match these filters.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="5" class="empty">No threats match these filters.</td></tr>`;
   } else {
-    body.innerHTML = rows.map(feedRow).join('');
+    body.innerHTML = rows.slice(0, visibleCount).map(feedRow).join('');
+  }
+  const showing = Math.min(visibleCount, rows.length);
+  const hidden  = Math.max(rows.length - visibleCount, 0);
+  const moreBtn = document.getElementById('load-more');
+  if (moreBtn){
+    if (hidden > 0){
+      moreBtn.style.display = '';
+      moreBtn.textContent = `Load ${Math.min(FEED_PAGE, hidden).toLocaleString()} more · ${hidden.toLocaleString()} hidden`;
+    } else { moreBtn.style.display = 'none'; }
   }
   document.getElementById('feed-meta').textContent =
-    `Showing ${rows.length.toLocaleString()} of ${allThreats.length.toLocaleString()} tracked · NVD CVSS + CISA KEV`;
+    `Showing ${showing.toLocaleString()} of ${rows.length.toLocaleString()} matching · ${allThreats.length.toLocaleString()} tracked · NVD CVSS + CISA KEV`;
   document.getElementById('feed-count').textContent = `${allThreats.length.toLocaleString()} tracked`;
 }
 
@@ -512,7 +529,7 @@ function renderTop10(){
 ════════════════════════════════════════════ */
 async function loadRadar(){
   try{
-    const res = await fetch(`${API}/api/content/radar?limit=500`, { signal: AbortSignal.timeout(15000) });
+    const res = await fetch(`${API}/api/content/radar?limit=20000`, { signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error('HTTP '+res.status);
     const json = await res.json();
     allThreats = json.data || [];
@@ -521,7 +538,7 @@ async function loadRadar(){
   }catch(e){
     console.error('Radar load error:', e);
     document.getElementById('feed-body').innerHTML =
-      `<tr><td colspan="4" class="empty">Live threat data temporarily unavailable. Retrying automatically.</td></tr>`;
+      `<tr><td colspan="5" class="empty">Live threat data temporarily unavailable. Retrying automatically.</td></tr>`;
   }
 }
 
@@ -529,6 +546,7 @@ async function loadRadar(){
    CISA KEV PANEL
 ════════════════════════════════════════════ */
 function fmtDate(s){ if(!s) return '—'; const d=new Date(s+'T00:00:00'); return isNaN(d)?s:d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
+function fmtPub(s){ if(!s) return '—'; const d=new Date(s); return isNaN(d)?'—':d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
 function kevEntry(k){
   return `<div class="kev-entry">
     <div class="kev-top">
@@ -578,19 +596,19 @@ async function loadKEV(){
 /* ════════════════════════════════════════════
    WIRE UP
 ════════════════════════════════════════════ */
-document.getElementById('feed-search').addEventListener('input', e=>{ filters.q=e.target.value; renderFeed(); });
+document.getElementById('feed-search').addEventListener('input', e=>{ filters.q=e.target.value; visibleCount=FEED_PAGE; renderFeed(); });
 document.getElementById('kev-search').addEventListener('input', e=>renderKEV(e.target.value));
 document.querySelectorAll('.chip[data-sev]').forEach(chip=>{
   chip.addEventListener('click', ()=>{
     document.querySelectorAll('.chip[data-sev]').forEach(c=>c.classList.remove('active'));
     chip.classList.add('active');
-    filters.sev = chip.dataset.sev; renderFeed();
+    filters.sev = chip.dataset.sev; visibleCount=FEED_PAGE; renderFeed();
   });
 });
 document.getElementById('kev-chip').addEventListener('click', function(){
   filters.kevOnly = !filters.kevOnly;
   this.classList.toggle('active', filters.kevOnly);
-  renderFeed();
+  visibleCount=FEED_PAGE; renderFeed();
 });
 document.getElementById('hamburger').addEventListener('click', function(){
   const d=document.getElementById('drawer'); const open=d.classList.toggle('open');
@@ -600,9 +618,12 @@ document.getElementById('hamburger').addEventListener('click', function(){
 /* ════════════════════════════════════════════
    INIT
 ════════════════════════════════════════════ */
+document.getElementById('load-more').addEventListener('click', ()=>{ visibleCount += FEED_PAGE; renderFeed(); });
 loadRadar();
 loadKEV();
 setInterval(loadRadar, 15*60*1000);  // refresh feed every 15 min
 </script>
 </body>
 </html>
+
+
