@@ -259,6 +259,8 @@ footer{border-top:1px solid var(--border);padding:44px 24px 30px;background:var(
         <button class="chip" data-sev="medium">Medium</button>
         <button class="chip" data-sev="low">Low</button>
         <button class="chip kev" id="kev-chip">KEV only</button>
+        <button class="chip" id="brief-chip">Briefed</button>
+        <button class="chip" id="date-chip" data-dir="">Date</button>
       </div>
     </div>
     <div class="feed-scroll">
@@ -343,7 +345,7 @@ const KEV_PANEL_LIMIT = 60;
    STATE
 ════════════════════════════════════════════ */
 let allThreats = [];
-let filters = { sev: 'all', kevOnly: false, q: '' };
+let filters = { sev: 'all', kevOnly: false, briefedOnly: false, dateSort: '', q: '' };
 const FEED_PAGE = 100;          // rows revealed per page
 let visibleCount = FEED_PAGE;   // grows via Load more; resets on filter change
 let kevData = [];
@@ -418,15 +420,28 @@ function updateStats(meta){
 ════════════════════════════════════════════ */
 function applyFilters(){
   const q = filters.q.toLowerCase().trim();
-  return allThreats.filter(t=>{
+  let rows = allThreats.filter(t=>{
     if (filters.sev !== 'all' && (t.severity||'unknown') !== filters.sev) return false;
     if (filters.kevOnly && !t.is_kev) return false;
+    if (filters.briefedOnly && !t.article_link) return false;
     if (q){
       const hay = [t.cve_id,t.threat_name,t.vendor,t.product,classify(t)].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
   });
+  if (filters.dateSort){
+    const dir = filters.dateSort === 'asc' ? 1 : -1;   // asc = oldest first, desc = newest first
+    rows = rows.slice().sort((a,b)=>{
+      const va = a.published_at ? new Date(a.published_at).getTime() : null;
+      const vb = b.published_at ? new Date(b.published_at).getTime() : null;
+      if (va === null && vb === null) return 0;
+      if (va === null) return 1;   // undated rows sink to the bottom
+      if (vb === null) return -1;
+      return dir * (va - vb);
+    });
+  }
+  return rows;
 }
 
 function feedRow(t){
@@ -608,6 +623,18 @@ document.querySelectorAll('.chip[data-sev]').forEach(chip=>{
 document.getElementById('kev-chip').addEventListener('click', function(){
   filters.kevOnly = !filters.kevOnly;
   this.classList.toggle('active', filters.kevOnly);
+  visibleCount=FEED_PAGE; renderFeed();
+});
+document.getElementById('brief-chip').addEventListener('click', function(){
+  filters.briefedOnly = !filters.briefedOnly;
+  this.classList.toggle('active', filters.briefedOnly);
+  visibleCount=FEED_PAGE; renderFeed();
+});
+document.getElementById('date-chip').addEventListener('click', function(){
+  // cycle: off -> newest first -> oldest first -> off
+  filters.dateSort = filters.dateSort === '' ? 'desc' : filters.dateSort === 'desc' ? 'asc' : '';
+  this.classList.toggle('active', !!filters.dateSort);
+  this.textContent = filters.dateSort === 'desc' ? 'Date ↓' : filters.dateSort === 'asc' ? 'Date ↑' : 'Date';
   visibleCount=FEED_PAGE; renderFeed();
 });
 document.getElementById('hamburger').addEventListener('click', function(){
