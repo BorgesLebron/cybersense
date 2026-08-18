@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Escaping Access Modifiers: Analyzing Property Overwrite Flaws in Scriban's TypedObjectAccessor (CVE-2026-73061)</title>
+<meta property="og:title" content="Escaping Access Modifiers: Analyzing Property Overwrite Flaws in Scriban's TypedObjectAccessor (CVE-2026-73061)"/>
+<meta property="og:description" content="Scriban, a lightweight template engine widely embedded in enterprise .NET applications, contains a critical access control bypass vulnerability (CVE-2026-73061) that permits direct manipulation of protected object properties through malformed template syntax. The vulnerability resides in the TypedObjectAccessor class, which fails to enforce C# access modifiers (private, protected, internal) during property resolution. This creates a pathway for attackers with template input control to escalate privileges, manipulate application state, and exfiltrate sensitive data without triggering standard authorization frameworks."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/EscapingAccessModifiers.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Aug/20260819-EscapingAccessModifiers.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Escaping Access Modifiers: Analyzing Property Over…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Escaping Access Modifiers: Analyzing Property Overwrite Flaws in Scriban's TypedObjectAccessor (CVE-2026-73061)</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">Template Engine Security</span>
+      <span class="tag-badge">Access Control Bypass</span>
+      <span class="tag-badge">.NET Vulnerability</span>
+      <span class="tag-badge">Scriban</span>
+      <span class="tag-badge">CVE-2026-73061</span>
+      <span class="tag-badge">Reflection-based Exploitation</span>
+      <span class="tag-badge">Enterprise Application Risk</span>
+      <span class="tag-badge">Supply Chain Threat</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-high"><strong>Severity:</strong> High</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: Aug 19, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/EscapingAccessModifiers.png" alt="Escaping Access Modifiers: Analyzing Property Overwrite Flaws in Scriban's TypedObjectAccessor (CVE-2026-73061) — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">Scriban, a lightweight template engine widely embedded in enterprise .NET applications, contains a critical access control bypass vulnerability (CVE-2026-73061) that permits direct manipulation of protected object properties through malformed template syntax. The vulnerability resides in the TypedObjectAccessor class, which fails to enforce C# access modifiers (private, protected, internal) during property resolution. This creates a pathway for attackers with template input control to escalate privileges, manipulate application state, and exfiltrate sensitive data without triggering standard authorization frameworks.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> Organizations using Scriban for user-customizable reporting, business process automation, or content management systems face immediate risk. Patched versions are available, and urgent inventory and upgrade action is required for affected deployments.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> The TypedObjectAccessor class in Scriban fails to enforce private/protected member access restrictions, allowing template-supplied input to directly overwrite sensitive object properties without validation, bypassing the intended security boundary between template runtime and host application state.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Security researchers identified CVE-2026-73061 in the TypedObjectAccessor class, the core component responsible for resolving property access on .NET objects during template evaluation. When a Scriban template references an object property, TypedObjectAccessor translates the template's request into C# reflection calls. However, the implementation fails to validate the access level (private, protected, or internal) of the target property before returning a reference or executing write operations.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">This omission is critical because C# access modifiers enforce encapsulation boundaries within applications. A private property is intended to be inaccessible from external code; an internal property should not be accessible across assembly boundaries. Scriban's template engine treats all properties uniformly regardless of declared access level. An attacker who controls template content can invoke reflection operations that bypass these modifiers entirely.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability affects all Scriban versions prior to the patched release specified in GitHub Security Advisory GHSA-7jvp-hj45-2f2m, extending across .NET Framework 4.6 and later, .NET Core 2.0 and later, and .NET 5.0 and subsequent versions. This creates a potentially years-long exposure period for unpatched instances in production environments.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Exploitation requires an adversary to either control template content directly or inject malicious syntax through a template input vector. In web applications, this might manifest as user-supplied template code in reporting interfaces, customizable email templates, or dynamic document generation features. In local scenarios, attackers might upload malicious template files to systems that process them with Scriban.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Once the attacker controls template syntax, they can reference protected properties by name without encountering the access restrictions that would normally prevent such access in compiled C# code. A template might directly reference and overwrite an authentication token, permission flag, or business logic state variable that the application intended to protect from external modification.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The attack surface extends particularly widely in multi-tenant architectures where different users or customers supply their own templates. One tenant's malicious template can manipulate objects belonging to other tenants or the platform itself, creating lateral escalation pathways. In systems incorporating third-party template repositories, compromised templates introduce supply chain risk.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">Development and Architecture Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">This vulnerability strikes at a core assumption underlying the adoption of template engines like Scriban: that the template runtime creates a security boundary isolating untrusted template code from sensitive application state. Many development teams adopt Scriban based on the expectation that templates represent a controlled, limited execution context—safer than arbitrary C# code execution, but still capable of generating dynamic content. CVE-2026-73061 collapses this assumption. Template code is no longer confined to a restricted subset of functionality; instead, it gains direct access to any object property the host application manipulates, regardless of access level. This transforms Scriban from a constrained sandbox into a full-fidelity reflection interface to the application's internal state.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Security and Operations Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">For security teams, the vulnerability introduces a new detection challenge. Exploitation may be difficult to distinguish from legitimate template usage without deep inspection of template syntax. Traditional input validation rules may not catch the specific patterns enabling access control bypass. Incident response procedures must account for the possibility that seemingly benign template customization features have been weaponized.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Enterprise Infrastructure Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Scriban appears across diverse enterprise .NET applications: content management systems, business automation platforms, reporting engines, and ERP systems rely on it for dynamic content generation. This widespread deployment means that a single vulnerability class can create systemic risk across an organization's technology portfolio. The vulnerability's impact extends beyond individual application compromises. In multi-tenant or shared infrastructure contexts, state manipulation through template injection can propagate across system boundaries. A compromised tenant's template could alter configuration affecting other tenants. A malicious template in a reporting system could modify audit logs or financial records consumed by downstream systems.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Supply Chain Risk Management</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Many organizations do not write their own Scriban templates; instead, they incorporate templates from third-party sources or open-source repositories. The vulnerability creates a new supply chain attack vector. A legitimate-appearing template could contain embedded access control bypass logic, activating only under specific conditions or times. Template repositories become potential staging grounds for attacks against downstream users.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (0-72 Hours):</strong> Organizations must conduct comprehensive identification of all .NET applications using Scriban. Dependency scanning tools can identify Scriban references in source code repositories and package manifests. Container image analysis can identify Scriban in compiled applications and Docker images. Application configuration reviews can reveal which systems actually expose template input to untrusted sources. Not all Scriban deployments carry equal risk. Applications where template content is entirely under organizational control have significantly lower risk than systems accepting user-supplied or third-party templates. Operational priority should reflect this distinction: systems with untrusted template input require urgent action; systems using Scriban only for internally-managed template generation can follow a more measured patching timeline.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Near-term (1-2 Weeks):</strong> Organizations should establish detection patterns for exploitation attempts. Scriban template syntax that attempts to access protected properties will appear distinctive in logs if properly captured. Patterns to monitor include template code referencing properties with underscore prefixes (common naming convention for private fields), properties declared as internal or protected, or unusual property names that don't match documented public APIs. Web application firewalls and input validation mechanisms may need enhancement to target known bypass patterns. Application-level logging that captures template content before processing provides better visibility but requires infrastructure investment.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Sustained (Ongoing):</strong> The vulnerability's exploitability depends on whether an attacker can control or inject template content. If templates are entirely authored internally and version-controlled, the attack surface is minimal. If templates are user-supplied through web interfaces, uploaded from untrusted sources, or incorporated from external repositories, the risk is substantially higher. Exploitation automation is straightforward: once an attacker understands the target application's object model and property names, they can construct templates that systematically exfiltrate or manipulate state. Applications compromised through Scriban template injection may themselves become conduits for downstream attacks. A reporting system that accepts user-supplied templates and uses template injection to modify its internal state might subsequently generate incorrect reports, send data to unauthorized recipients, or alter audit logs. Organizations must consider not just direct Scriban exposure but also systems that depend on Scriban-based applications' integrity.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul><li>1 - Conduct a dependency inventory across all .NET projects using automated tooling that scans project files, package manifests, and container images for Scriban references.</li>
+        <li>2 - Document each identified Scriban instance, the version in use, and whether it processes user-supplied or internally-managed templates.</li>
+        <li>3 - Prioritize applications accepting untrusted template input: public-facing reporting systems, content management platforms, user-customizable automation tools, and multi-tenant systems.</li>
+        <li>4 - Flag high-priority systems for urgent patching regardless of other considerations.</li>
+        <li>5 - Establish communication channels with development teams responsible for identified applications.</li>
+        <li>6 - Provide patched Scriban version and upgrade instructions to development teams.</li>
+        <li>7 - Set a firm deadline of two weeks maximum for patch deployment in critical systems.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Intermediate Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with developed security processes and incident response capabilities.</p>
+      <ul><li>1 - Implement input validation at the template boundary that blocks known dangerous patterns: template syntax attempting to access private fields, internal properties, or properties not in a whitelist of approved names.</li>
+        <li>2 - Establish enhanced logging and monitoring for template processing that captures template source and content before processing.</li>
+        <li>3 - Configure alerts for templates referencing properties matching known sensitive patterns such as authentication, authorization, and financial data fields.</li>
+        <li>4 - Conduct application-level code review of how applications use Scriban, identifying where templates manipulate critical state and where template results affect authorization decisions.</li>
+        <li>5 - Add validation checks at data boundaries to detect state anomalies that might result from template injection.</li>
+        <li>6 - Deploy patched Scriban versions in phased fashion, prioritizing systems with untrusted template input.</li>
+        <li>7 - Validate functionality through integration testing before promoting patched versions to production.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Advanced Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with mature security architecture and strategic vendor relationship management.</p>
+      <ul><li>1 - Conduct formal security architecture review of template engine security models to determine whether Scriban's access control, even when patched, remains sufficiently restrictive for organizational threat model.</li>
+        <li>2 - Evaluate alternative template engines with more robust security models that better align with security requirements.</li>
+        <li>3 - Implement formal security architecture reviews for template engine selection decisions with explicit criteria including access control validation, vendor security responsiveness, and patch velocity.</li>
+        <li>4 - Document template engine selection criteria in architectural decision records.</li>
+        <li>5 - Develop supply chain risk management processes for template repositories and third-party templates with code review and security scanning requirements.</li>
+        <li>6 - Maintain an internal repository of reviewed and approved templates rather than allowing unrestricted access to public sources.</li>
+        <li>7 - Establish ongoing monitoring of Scriban and other template engine vulnerabilities through CVE feeds and vendor security advisories.</li>
+        <li>8 - Integrate template engine vulnerability monitoring into the dependency management workflow for automated alerting and prioritization.</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The Scriban access control bypass represents a critical vulnerability class in modern application architecture: the collapse of assumed security boundaries in infrastructure components designed to constrain untrusted code. Organizations built defense-in-depth strategies around the premise that template engines provide isolation and restricted access. This vulnerability necessitates recalibration of those assumptions.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">More broadly, CVE-2026-73061 exemplifies why enterprises must treat dependency management and vendor security responsiveness as strategic security capabilities. A lightweight, seemingly peripheral component becomes a single point of failure affecting applications across the technology portfolio. Rapid response requires pre-positioned inventory systems, established communication channels with development teams, and clear patch prioritization frameworks.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The immediate imperative is patch deployment for systems with untrusted template input. The sustained requirement is architectural resilience: ensuring that future vulnerabilities in foundational components are detected, assessed, and remediated before they cascade across enterprise systems. In an environment where security boundaries increasingly depend on the correct behavior of third-party components, visibility and rapid response capacity have become essential organizational capabilities.</p>
+    <div class="pull-quote">"Institutional resilience, in practice, means knowing what you depend on—and being prepared to act when those dependencies falter."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2026-73061</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">8.2 (High)</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">CWE-284 (Improper Access Control); CWE-639 (Authorization Bypass Through User-Controlled Key); CWE-95 (Improper Neutralization of Directives in Dynamically Evaluated Code)</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">August 2026</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Publicly disclosed; proof-of-concept information available</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Network (user-supplied templates via web interface); Local (file-based template input)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">.NET Framework 4.6+, .NET Core 2.0+, .NET 5.0+, .NET 6.0+, .NET 7.0+, .NET 8.0+</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Scriban template engine (open-source, widely embedded in enterprise applications)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Web applications, reporting engines, content management systems, business automation platforms, multi-tenant SaaS environments, document generation systems, ERP systems</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">Extends from Scriban initial release through patch deployment completion; continues indefinitely for unpatched instances</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

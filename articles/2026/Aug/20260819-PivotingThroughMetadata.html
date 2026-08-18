@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Pivoting Through Metadata: Analyzing Unauthenticated SSRF in MLflow's Webhook Endpoint (CVE-2026-64849)</title>
+<meta property="og:title" content="Pivoting Through Metadata: Analyzing Unauthenticated SSRF in MLflow's Webhook Endpoint (CVE-2026-64849)"/>
+<meta property="og:description" content="A critical vulnerability in MLflow versions prior to 3.15.0 exposes machine learning operations infrastructure to remote exploitation through an unauthenticated webhook endpoint. CVE-2026-64849 allows attackers to execute Server-Side Request Forgery (SSRF) attacks without credentials, enabling internal network reconnaissance, cloud metadata service exploitation, and lateral movement into adjacent infrastructure. The vulnerability affects MLflow deployments across on-premise, cloud-hosted, and hybrid environments."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/PivotingThroughMetadata.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Aug/20260819-PivotingThroughMetadata.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Pivoting Through Metadata: Analyzing Unauthenticat…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Pivoting Through Metadata: Analyzing Unauthenticated SSRF in MLflow's Webhook Endpoint (CVE-2026-64849)</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">MLflow SSRF</span>
+      <span class="tag-badge">Unauthenticated Endpoint</span>
+      <span class="tag-badge">Cloud Credential Harvesting</span>
+      <span class="tag-badge">ML Operations Security</span>
+      <span class="tag-badge">CVSS 8.2 High</span>
+      <span class="tag-badge">Supply Chain Risk</span>
+      <span class="tag-badge">Network Reconnaissance</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-high"><strong>Severity:</strong> High</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: Aug 19, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/PivotingThroughMetadata.png" alt="Pivoting Through Metadata: Analyzing Unauthenticated SSRF in MLflow's Webhook Endpoint (CVE-2026-64849) — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">A critical vulnerability in MLflow versions prior to 3.15.0 exposes machine learning operations infrastructure to remote exploitation through an unauthenticated webhook endpoint. CVE-2026-64849 allows attackers to execute Server-Side Request Forgery (SSRF) attacks without credentials, enabling internal network reconnaissance, cloud metadata service exploitation, and lateral movement into adjacent infrastructure. The vulnerability affects MLflow deployments across on-premise, cloud-hosted, and hybrid environments.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> Organizations running unpatched instances face immediate risk of credential harvesting, internal service discovery, and potential data pipeline manipulation. Mitigation requires immediate upgrade to MLflow v3.15.0, implementation of network-level egress filtering, and comprehensive 90-day forensic review of webhook endpoint access logs.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> Unauthenticated webhook endpoints in MLflow versions prior to 3.15.0 allow remote attackers to trigger Server-Side Request Forgery attacks without credentials, enabling internal network reconnaissance, cloud metadata service exploitation, and potential compromise of adjacent infrastructure through HTTP requests to the `/api/2.0/webhook-events` endpoint.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">MLflow, an open-source platform for managing machine learning experiments, model registration, and operational workflows, contained a critical authentication gap in its webhook functionality. The `/api/2.0/webhook-events` endpoint—designed to trigger external integrations and callback mechanisms—lacked credential validation, allowing any network-accessible caller to register and execute webhook triggers without valid authentication tokens or API credentials.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Exploitation operates through a straightforward sequence. An attacker crafts an HTTP request to the unauthenticated webhook endpoint, specifying a malicious URL in the webhook payload. The MLflow service, executing with inherited network privileges and outbound HTTP capability, automatically forwards the request to the attacker-controlled or internally-targeted address. Because the request originates from the MLflow service account context, it bypasses network-level access controls that would typically block external callers from reaching internal systems.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">This mechanism enables systematic Server-Side Request Forgery attacks. An attacker can probe internal IP ranges by crafting webhook requests targeting each address, mapping internal network topology through response analysis. More critically, the attacker can target cloud metadata services—specifically the AWS EC2 metadata endpoint at 169.254.169.254—to retrieve temporary credentials, role information, and access tokens associated with the MLflow service's cloud identity.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability affects all MLflow versions prior to release 3.15.0, published on August 19, 2026. No authentication requirement, version gating, or configuration option to enable security controls existed in earlier releases. The endpoint was accessible from any network segment with HTTP connectivity to the MLflow service port. Containerized deployments, cloud-hosted instances, and on-premise installations are equally vulnerable.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The technical root cause reflects architectural assumptions prevalent in machine learning operations platforms: webhook functionality was designed for internal orchestration use cases where network access was presumed trustworthy. Authentication controls were deferred as non-essential to functionality, and the endpoint was never subjected to security testing that included unauthenticated attacker scenarios.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">Data Engineering and MLOps Leadership</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">The vulnerability threatens operational continuity and data pipeline integrity. Compromised webhook endpoints can trigger unauthorized model training runs, deploy malicious model versions to production, or exfiltrate training dataset metadata. MLflow deployments are often segregated from general IT infrastructure, receiving lower security scrutiny despite their privileged access to sensitive datasets and production systems. This vulnerability exposes the flawed premise that segregation alone provides security without explicit authentication and access controls.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Cloud Infrastructure Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">The SSRF exploitation vector directly enables cloud credential harvesting through metadata service endpoints. An attacker exploiting this vulnerability can retrieve temporary AWS credentials, Azure managed identity tokens, or GCP service account credentials associated with the MLflow service account. These credentials—valid for hours or days—grant direct access to cloud storage buckets, databases, and compute resources. In shared cloud environments where multiple teams have overlapping resource access, a single compromised MLflow instance could expose credentials belonging to multiple business units.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Security Operations and Incident Response</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">SSRF attacks present forensic and detection challenges distinct from traditional network intrusions. Attacks originate from a trusted internal system making requests that appear legitimate in application logs. Network detection requires understanding unusual outbound traffic patterns from a service designed to make HTTP requests for webhook operations. Attacker reconnaissance activity generates minimal noise because webhook endpoints are designed to handle many requests and report failures gracefully.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Enterprise Architects and Compliance</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">The vulnerability demonstrates a systemic pattern in software supply chains where authentication controls are treated as enhancements rather than requirements. Regulatory frameworks such as HIPAA, PCI-DSS, and SOC 2 assume that administrative and operational interfaces are authenticated and access-controlled. When such controls are absent, organizations fall out of compliance regardless of compensating controls elsewhere.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate Detection and Investigation:</strong> Indicators of exploitation appear in three primary data streams: MLflow application logs, reverse proxy or load balancer access logs, and network flow data. Defenders should search for HTTP POST or GET requests to the `/api/2.0/webhook-events` endpoint originating from external IP addresses or unusual internal sources. Webhook URL parameters containing localhost addresses, RFC 1918 private IP ranges, or cloud metadata service endpoints strongly suggest exploitation attempts. Rapid sequential requests to different addresses within the same subnet indicate automated reconnaissance. MLflow's webhook event history should be examined for the past 90 days to identify exploitation windows and assess potential data access.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Exposure Assessment:</strong> Organizations must conduct urgent version audits across all MLflow deployments—including development, staging, and production environments. An inventory of network-level access to each MLflow instance is essential: which IP ranges, external networks, or cloud environments can initiate HTTP connections to the MLflow service? This assessment informs the risk profile. Enumerate all legitimate webhook integrations: which external systems are configured to receive webhook notifications from MLflow? This allowlist informs subsequent hardening efforts.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Incident Response Sequencing (0-72+ Hours):</strong> Phase 1 (Immediate): Isolate the MLflow service network segment if operationally feasible; block outbound HTTP traffic from MLflow to RFC 1918 ranges and cloud metadata service ranges. Phase 2 (0-4 Hours): Deploy network-level detection for webhook endpoint access; configure SIEM alerting; preserve all logs. Phase 3 (4-24 Hours): Upgrade MLflow to v3.15.0; rotate all cloud credentials and service account tokens. Phase 4 (24-72 Hours): Conduct forensics to identify lateral movement; review authentication logs on internal systems. Phase 5 (72+ Hours): Conduct comprehensive threat hunt; assess whether data exfiltration occurred; notify customers or regulatory bodies if required.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Deployment Architecture Hardening:</strong> Long-term risk reduction requires architectural changes to MLflow deployments. Network segmentation should restrict both inbound and outbound traffic: inbound access should be limited to authenticated clients only, enforced at a reverse proxy or API gateway layer before traffic reaches MLflow. Outbound HTTP and HTTPS traffic should be restricted to pre-approved destinations with allowlisted webhook endpoints. Default egress policies should block traffic to RFC 1918 ranges and cloud metadata service ranges. MLflow service accounts should run with minimal privileges; credential delivery mechanisms should explicitly inject credentials rather than relying on instance metadata services.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#f87171;">⬤ Emergency Response (0-24 Hours)</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Critical actions required immediately for all organizations running MLflow.</p>
+      <ul><li>1 - Upgrade all MLflow instances—including development and staging environments—to v3.15.0 or later within 24 hours</li>
+        <li>2 - Implement network-level egress filtering to block outbound HTTP and HTTPS traffic from MLflow to RFC 1918 private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16) and cloud metadata service ranges (169.254.0.0/16)</li>
+        <li>3 - Extract and analyze MLflow access logs from the past 90 days for external-origin requests to `/api/2.0/webhook-events` endpoint</li>
+        <li>4 - Rotate all cloud credentials and service account tokens if metadata service exploitation is suspected</li>
+        <li>5 - Deploy SIEM detection rules to flag future exploitation attempts targeting webhook endpoint</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Hardening (1-7 Days)</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Defense-in-depth hardening measures to prevent exploitation and improve detection.</p>
+      <ul><li>1 - Deploy a reverse proxy or API gateway in front of MLflow services to enforce authentication on all webhook operations</li>
+        <li>2 - Implement or harden network segmentation: segregate MLflow services into restricted network segments with explicit egress policies and allowlisted webhook integrations</li>
+        <li>3 - Configure Web Application Firewall (WAF) or API gateway rules to detect and block SSRF payloads in webhook URL parameters</li>
+        <li>4 - Conduct lateral movement assessment to identify all internal services accessible from MLflow service account context</li>
+        <li>5 - Reduce MLflow service account privileges to only those necessary for legitimate operations</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Long-Term Remediation (7-30 Days)</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Comprehensive vulnerability management and governance improvements.</p>
+      <ul><li>1 - Extend vulnerability scanning across all MLflow instances and dependencies; establish continuous patch management workflow</li>
+        <li>2 - Implement identity and access management (IAM) policies for MLflow requiring authentication and role-based access control</li>
+        <li>3 - Implement cloud metadata service blocking for container environments; use explicit credential delivery mechanisms instead of instance metadata services</li>
+        <li>4 - Conduct threat modeling for entire machine learning operations architecture to identify similar authentication gaps</li>
+        <li>5 - Establish incident response runbook for SSRF attacks and conduct tabletop exercises</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Organizational Policy (30+ Days)</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Enterprise-wide security policy and supply chain governance updates.</p>
+      <ul><li>1 - Update software supply chain security policies to mandate authentication controls on all administrative and operational endpoints</li>
+        <li>2 - Apply authentication requirements to vendor procurement: vendors whose platforms lack authentication controls must provide remediation plans</li>
+        <li>3 - Establish security testing requirements for machine learning operations platforms including unauthenticated attacker scenarios</li>
+        <li>4 - Monitor vendor security advisories on continuous 30-day cycle with formal vulnerability tracking system and SLAs</li>
+        <li>5 - Document all MLflow deployments in enterprise asset management systems to enable rapid identification and prioritization</li>
+        <li>6 - Conduct security awareness training for data engineering and MLOps teams on webhook security risks and incident reporting</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">This vulnerability exemplifies a recurring pattern in enterprise software security: platforms designed for integration and automation often deprioritize authentication controls on operational endpoints, treating them as internal-only interfaces despite network connectivity that contradicts such assumptions. Machine learning operations platforms are increasingly central to organizational data and decision-making infrastructure—a position demanding equivalent security rigor to production databases or application servers.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2026-64849 demonstrates how unauthenticated endpoints become pivots for lateral movement and credential harvesting in cloud-native environments. Organizations that treat MLflow upgrades as emergency priorities, implement network segmentation and egress filtering, and establish continuous vulnerability monitoring for ML infrastructure components will substantially reduce their exposure.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The broader imperative extends beyond this specific platform: authentication governance must be architecturally embedded into machine learning operations from initial design, not retrofitted when vulnerabilities emerge. Organizations that build this discipline now will respond rapidly to future disclosures in an increasingly complex supply chain of ML-related platforms and integrations.</p>
+    <div class="pull-quote">"Institutional resilience in data-driven organizations depends on the security of platforms governing data pipelines, model integrity, and infrastructure access—no operational convenience justifies unauthenticated administrative interfaces."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2026-64849</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">8.2 (High) - CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:L/A:N</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">CWE-918 (Server-Side Request Forgery)</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">August 19, 2026</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Expected exploitation timeline 7-14 days post-disclosure; attacks originate from network-accessible sources; reconnaissance activity appears as rapid sequential requests to different IP addresses within same subnet; credential harvesting targets cloud metadata service endpoints at 169.254.169.254</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Network (HTTP/HTTPS) - Attack Complexity Low - Privileges Required None - User Interaction None</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Linux, Windows, macOS, containerized environments (Docker, Kubernetes)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">MLflow Model Registry and Experiment Tracking Platform - Affected Versions: All prior to v3.15.0 - Patched Version: v3.15.0 and later - Vulnerable Component: `/api/2.0/webhook-events` HTTP endpoint</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">On-premise, cloud-hosted (AWS, GCP, Azure), hybrid environments - Industries: Financial Services, Healthcare, Manufacturing, Retail, Technology</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">Unlimited on unpatched systems; root cause is missing credential validation on webhook endpoint registration and trigger operations</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
