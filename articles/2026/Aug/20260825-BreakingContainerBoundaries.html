@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Breaking Container Boundaries: Analyzing Path Traversal in Canonical LXD's Template Processing (CVE-2026-66897)</title>
+<meta property="og:title" content="Breaking Container Boundaries: Analyzing Path Traversal in Canonical LXD's Template Processing (CVE-2026-66897)"/>
+<meta property="og:description" content="CVE-2026-66897 represents a significant erosion of container boundary enforcement within Canonical's LXD platform. A path traversal vulnerability in the template processing layer permits authenticated local users to traverse filesystem hierarchies and access host system resources, effectively circumventing container namespace isolation. This vulnerability affects organizations deploying LXD in multi-tenant environments, Kubernetes clusters, and hybrid cloud infrastructure."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/BreakingContainerBoundaries.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Aug/20260825-BreakingContainerBoundaries.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Breaking Container Boundaries: Analyzing Path Trav…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Breaking Container Boundaries: Analyzing Path Traversal in Canonical LXD's Template Processing (CVE-2026-66897)</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">Container Security</span>
+      <span class="tag-badge">Path Traversal</span>
+      <span class="tag-badge">LXD Vulnerability</span>
+      <span class="tag-badge">Namespace Escape</span>
+      <span class="tag-badge">CVE-2026-66897</span>
+      <span class="tag-badge">Multi-Tenant Risk</span>
+      <span class="tag-badge">Kubernetes Security</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-high"><strong>Severity:</strong> High</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: Aug 25, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/BreakingContainerBoundaries.png" alt="Breaking Container Boundaries: Analyzing Path Traversal in Canonical LXD's Template Processing (CVE-2026-66897) — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">CVE-2026-66897 represents a significant erosion of container boundary enforcement within Canonical's LXD platform. A path traversal vulnerability in the template processing layer permits authenticated local users to traverse filesystem hierarchies and access host system resources, effectively circumventing container namespace isolation. This vulnerability affects organizations deploying LXD in multi-tenant environments, Kubernetes clusters, and hybrid cloud infrastructure.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">Exploitation requires local authentication but no elevated privileges, enabling host compromise, lateral movement across containerized workloads, and potential supply chain contamination through container image registries. Organizations running unpatched LXD versions should prioritize inventory assessment and patch deployment within 30 days of disclosure to minimize exposure. The vulnerability underscores a broader architectural principle: container isolation requires continuous validation across operational layers rather than presumption of inherited security.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> Path traversal in LXD's template processing layer permits authenticated local attackers to escape container namespaces and access host filesystem resources, circumventing fundamental container isolation guarantees and enabling host compromise, privilege escalation, and lateral movement across containerized infrastructure.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2026-66897 was identified through responsible disclosure coordination between security researchers and Canonical's LXD security team. The vulnerability entered public awareness through coordinated disclosure channels aligned with vendor best practices: initial vendor notification, investigation and patch development, coordinated publication, and simultaneous release of security advisories through official channels including CVE Record, GitHub Security Advisories, and vendor bulletins. This coordination model minimizes exploitation exposure during the patch development window but does not prevent rapid exploitation once disclosure occurs. Threat research communities documented exploitation mechanics within days of publication.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">LXD's template processing pipeline handles container initialization configurations, including filesystem mount specifications, network parameters, and resource constraints. The vulnerability exists in path resolution mechanisms that interpret template directives specifying filesystem locations and resource bindings. Input validation gaps permit embedding of path traversal sequences within template parameters. These sequences are processed without sufficient canonicalization or validation against directory boundaries, permitting resolution to locations outside intended container namespace hierarchies.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Exploitation involves crafting LXD container templates or management API requests containing path traversal payloads targeting sensitive host system locations. Documented methodologies demonstrate reading host system files through container mount operations, accessing configurations containing credentials or sensitive information, and writing to host filesystem locations to establish persistence or lateral movement infrastructure. Successful exploitation bridges container and host kernel namespaces, neutralizing the isolation boundaries fundamental to container security architecture.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">Container Platform Architects</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Container isolation depends on kernel namespace enforcement. This vulnerability challenges a critical architectural assumption: that userspace components processing container configuration operate as trusted, bounds-respecting operations. Template processing is logically sandboxed but not cryptographically or kernel-enforced isolated. This pattern recurs throughout container platform history where trusted configuration parsing functions fail to enforce boundaries they were assumed to maintain.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Multi-Tenant Infrastructure Operators</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Organizations operating shared hosting environments face acute exposure. Malicious or compromised containers can exploit this vulnerability to access neighboring containers' data, host system credentials, or sensitive configurations affecting other tenants. Data exfiltration, competitive intelligence gathering, and cross-tenant lateral movement become operationally feasible. In Kubernetes environments where LXD serves as node-level container runtime, compromised workloads can escape container boundaries to access Kubernetes secrets, kubelet credentials, or cluster-wide API credentials.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Regulated Organizations</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Compliance frameworks impose isolation and data protection requirements. Container escape vulnerabilities create compliance violations where isolation guarantees are undermined by exploitable code paths. Organizations must document findings, implement compensating controls, and communicate breach potential to compliance auditors. In regulated industries, this vulnerability may trigger incident reporting obligations depending on organizational risk thresholds and regulatory interpretation.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Supply Chain Security Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">LXD deployments serving as container image build and registry infrastructure face supply chain compromise risk. Compromise of these systems through template traversal enables injection of malicious code into container images distributed to downstream consumers. A single infrastructure compromise can propagate across organizational supply chains.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (0-7 Days):</strong> Organizations must immediately inventory LXD deployments and identify affected versions. Exposure assessment should distinguish between vulnerable versions in production processing untrusted templates, vulnerable versions in controlled environments, and development systems. Organizations operating LXD in cloud-native environments face heightened exposure because container templates are often generated dynamically by orchestration platforms or user-facing provisioning interfaces. Access restrictions preventing untrusted users from initiating container creation should be implemented.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short-Term (7-30 Days):</strong> The exposure window following public disclosure typically spans 30-60 days before widespread exploitation becomes common. Security patches should be applied to vulnerable LXD versions as available, tested in non-production environments before production rollout. For systems where immediate patching is infeasible, template processing should be disabled or restricted to administrative-only operations with audit logging. Detection rules should be implemented in security monitoring tools alerting on exploitation attempts.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Medium-Term (30-90 Days):</strong> Comprehensive review of container isolation controls should validate separation between containers and host systems remains effective after patching. Template generation processes should be audited to identify where untrusted input flows into template creation. Supplementary security controls including AppArmor profiles, SELinux policies, and namespace restrictions should add defense layers beyond patching. Penetration testing of LXD infrastructure should validate isolation guarantees remain intact.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Long-Term (90+ Days):</strong> Organizations should evaluate alternative container platforms and assess whether requirements could be met with more mature or actively maintained solutions. Zero-trust architecture principles should be implemented for multi-tenant container environments. Container security baselines should be developed and maintained enforcing hardened configurations and restrictive security policies. Container security assessment should be integrated into vendor evaluation processes requiring security maturity demonstration.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul><li>1 - Generate inventory of all LXD deployments using configuration management databases or manual enumeration. Document versions, locations, and operational context.</li>
+        <li>2 - Identify systems processing templates from untrusted sources or supporting multi-tenant access. Prioritize these for accelerated remediation.</li>
+        <li>3 - Restrict template processing privileges. Review role-based access controls limiting which users can initiate container creation or template processing operations.</li>
+        <li>4 - Apply security patches to vulnerable LXD versions as available. Test in non-production environments before production rollout.</li>
+        <li>5 - For systems where immediate patching is infeasible, disable template processing or restrict it to administrative-only operations with audit logging.</li>
+        <li>6 - Implement access restrictions preventing untrusted users from initiating container creation or template processing.</li>
+        <li>7 - Audit container isolation controls validating separation between containers and host systems remains effective after patching.</li>
+        <li>8 - Document assumptions about trusted vs. untrusted code boundaries within LXD architecture and identify other operational layers containing similar vulnerabilities.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Intermediate Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with dedicated security teams and integrated monitoring capabilities.</p>
+      <ul><li>1 - Perform automated asset discovery using infrastructure monitoring tools to identify all LXD instances.</li>
+        <li>2 - Correlate LXD deployment inventory with network segmentation and access control data to identify systems accessing sensitive resources.</li>
+        <li>3 - Document compensating controls including network segmentation, monitoring, and endpoint protections that may mitigate exploitation risk if patching is delayed.</li>
+        <li>4 - Initiate patch availability verification through vendor advisories and security update channels.</li>
+        <li>5 - Develop staged patch deployment plan identifying maintenance windows for production systems. Sequence by risk level.</li>
+        <li>6 - Test patches in staging environments mirroring production configurations to identify compatibility issues or performance impacts.</li>
+        <li>7 - Implement detection rules in security monitoring tools alerting on exploitation attempts. Monitor for path traversal payloads in LXD API logs and daemon logs.</li>
+        <li>8 - Establish communication procedures with system owners regarding patching schedules and operational changes during remediation.</li>
+        <li>9 - Conduct penetration testing of LXD infrastructure validating isolation guarantees remain intact.</li>
+        <li>10 - Review template generation processes identifying where untrusted input flows into template creation. Implement additional input validation or sanitization.</li>
+        <li>11 - Implement supplementary security controls including AppArmor profiles, SELinux policies, and namespace restrictions adding defense layers beyond patching.</li>
+        <li>12 - Establish secure template development and validation standards for teams creating container templates.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Advanced Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with comprehensive security programs and sophisticated threat modeling capabilities.</p>
+      <ul><li>1 - Implement automated version enumeration across all LXD infrastructure using configuration management or vulnerability scanning.</li>
+        <li>2 - Perform network access mapping identifying which systems can be compromised and what downstream resources they access.</li>
+        <li>3 - Deploy network-based intrusion detection rules targeting path traversal exploitation attempts in LXD communication channels.</li>
+        <li>4 - Establish incident response escalation procedures for container escape scenarios and brief security operations teams on vulnerability characteristics.</li>
+        <li>5 - Automate patch deployment using configuration management with staged rollout and automated rollback on failure.</li>
+        <li>6 - Implement kernel-level observability including eBPF-based monitoring and auditd rules detecting namespace boundary violations and container escape attempts.</li>
+        <li>7 - Deploy enhanced logging capturing all template processing operations, API calls, and filesystem access requests for forensic analysis and threat detection.</li>
+        <li>8 - Conduct vulnerability scanning post-patch to validate remediation success and identify missed systems.</li>
+        <li>9 - Perform comprehensive container security architecture assessment evaluating isolation enforcement, resource containment, and operational security practices.</li>
+        <li>10 - Engage third-party security audit teams to perform code review of LXD modifications or customizations and validate isolation properties.</li>
+        <li>11 - Develop container escape detection and response procedures aligned with organizational incident response protocols.</li>
+        <li>12 - Establish vendor security advisory integration processes ensuring rapid deployment and assessment of security updates.</li>
+        <li>13 - Evaluate alternative container platforms and assess whether organizational requirements could be met with more mature or actively maintained solutions.</li>
+        <li>14 - Implement zero-trust architecture principles for multi-tenant container environments including identity-based access controls and cryptographic isolation.</li>
+        <li>15 - Develop and maintain container security baselines enforcing hardened configurations, minimal attack surface, and restrictive security policies.</li>
+        <li>16 - Establish container security training program for development and operations teams emphasizing secure container lifecycle management and vulnerability response.</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2026-66897 exemplifies a recurrent pattern in container platform evolution: vulnerabilities emerging not from fundamental isolation mechanisms but from operational layers managing container lifecycle. Template processing, configuration handling, and other ostensibly sandboxed operations represent persistent attack surfaces requiring continuous validation rather than presumption of security.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">This vulnerability does not represent container technology failure but rather an important reminder that container isolation is a defense-in-depth property requiring validation across multiple architectural layers and continuous assessment as new features are introduced. Organizations can address this specific vulnerability through prompt patching and compensating controls, but broader institutional value lies in recognizing that container security requires active architectural governance, not passive reliance on framework assumptions.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The exposure window following public disclosure typically spans 30-60 days before widespread exploitation becomes common. Organizations initiating remediation immediately maintain advantage; those delaying face progressively elevated risk as exploitation tools proliferate and threat actors develop operational procedures. The pathway from vulnerability disclosure to active enterprise exploitation has compressed significantly, making time-sensitive response capability a core operational requirement.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Container security remains essential infrastructure capability. The discipline lies in validating assumptions continuously, remediating vulnerabilities rapidly, and maintaining defense-in-depth strategies that survive individual component failures.</p>
+    <div class="pull-quote">"Container isolation is a defense-in-depth property requiring validation across multiple architectural layers, not a single guaranteed mechanism."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2026-66897</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">8.8 (High) - CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal'); CWE-23: Relative Path Traversal</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">August 2026</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Limited public proof-of-concept availability; threat research community documentation; no confirmed widespread exploitation as of publication date</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Local network access; authenticated user with container management API access; no privilege escalation required for initial exploitation</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Linux distributions including Ubuntu, Debian, RHEL, CentOS, Alpine</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Canonical LXD Container Management Platform (versions prior to published patch version)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Container runtime; template processing daemon; applies to all LXD deployment models (standalone, clustered, Kubernetes-integrated)</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">Active and expanding; exploitation difficulty low-to-moderate; detection difficulty moderate-to-high</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
