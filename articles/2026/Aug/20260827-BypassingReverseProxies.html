@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Bypassing Reverse Proxies: Analyzing Path-Handling and Header Normalization Flaws in Oracle WebLogic Server Proxy Plug-in (CVE-2026-21962)</title>
+<meta property="og:title" content="Bypassing Reverse Proxies: Analyzing Path-Handling and Header Normalization Flaws in Oracle WebLogic Server Proxy Plug-in (CVE-2026-21962)"/>
+<meta property="og:description" content="CVE-2026-21962 exposes a critical architectural vulnerability in Oracle WebLogic Server deployments protected by reverse proxies, enabling unauthenticated attackers to bypass authentication controls through HTTP request manipulation. The vulnerability stems from incompatible path canonicalization and header interpretation standards between proxy and backend systems—attackers craft requests that pass authentication at the proxy layer while reaching unprotected endpoints on the backend."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/BypassingReverseProxies.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Aug/20260827-BypassingReverseProxies.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Bypassing Reverse Proxies: Analyzing Path-Handling…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Bypassing Reverse Proxies: Analyzing Path-Handling and Header Normalization Flaws in Oracle WebLogic Server Proxy Plug-in (CVE-2026-21962)</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">Authentication Bypass</span>
+      <span class="tag-badge">Path Normalization</span>
+      <span class="tag-badge">Reverse Proxy</span>
+      <span class="tag-badge">CVE-2026-21962</span>
+      <span class="tag-badge">WebLogic Server</span>
+      <span class="tag-badge">HTTP Request Manipulation</span>
+      <span class="tag-badge">Web Security</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-high"><strong>Severity:</strong> High</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: August 27, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/BypassingReverseProxies.png" alt="Bypassing Reverse Proxies: Analyzing Path-Handling and Header Normalization Flaws in Oracle WebLogic Server Proxy Plug-in (CVE-2026-21962) — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">CVE-2026-21962 exposes a critical architectural vulnerability in Oracle WebLogic Server deployments protected by reverse proxies, enabling unauthenticated attackers to bypass authentication controls through HTTP request manipulation. The vulnerability stems from incompatible path canonicalization and header interpretation standards between proxy and backend systems—attackers craft requests that pass authentication at the proxy layer while reaching unprotected endpoints on the backend.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> Active exploitation has been documented in production environments across financial services, healthcare, and government sectors. Organizations operating WebLogic behind reverse proxies face immediate risk of unauthorized backend access, data exposure, and lateral movement. Patching should be prioritized within two weeks for internet-facing deployments; concurrent hardening of proxy configurations and enhanced monitoring are essential during the remediation window.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> Organizations deploying Oracle WebLogic Server behind reverse proxies face authentication circumvention through crafted HTTP requests that exploit normalization divergence—enabling unauthenticated attackers to access protected backend resources when proxy and application server implement incompatible path canonicalization and header interpretation standards.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">In January 2026, Oracle disclosed CVE-2026-21962 in its Critical Patch Update, identifying a fundamental design flaw in how Oracle WebLogic Server processes HTTP requests from reverse proxies. The vulnerability affects multiple versions of WebLogic Server across Linux, Windows, and Unix platforms deployed in hybrid cloud architectures, multi-tenant environments, and on-premises data centers.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The root cause centers on path normalization divergence. When an HTTP request traverses a reverse proxy to a backend application server, both systems must canonicalize the request path—converting encoded sequences, resolving relative references, normalizing case sensitivity, and handling trailing slashes—before making authentication decisions. RFC 3986 and HTTP/1.1 specifications permit implementation variations, and common proxy solutions (Nginx, Apache HTTP Server, F5 BIG-IP, Citrix NetScaler) canonicalize differently than WebLogic Server.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">An attacker exploits this divergence by crafting requests with path sequences interpreted differently by proxy and backend. Examples include double-encoded path segments interpreted as encoded characters by the proxy but as directory traversal by the backend, mixed-case encoding that survives proxy authentication filters but alters backend path resolution, strategically placed trailing slashes that normalize differently across systems, and injected or manipulated authentication headers that the backend accepts as authoritative.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Proof-of-concept attack requests have circulated within the security community and entered public exploit databases. CloudSEK honeypot telemetry confirmed active exploitation in August 2026, indicating that threat actors—from opportunistic attackers to sophisticated groups—have weaponized the vulnerability. Organizations running unpatched WebLogic instances exposed to the internet or accessible within supply chain trust boundaries face immediate targeting.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">Infrastructure and Operations Leaders</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">This vulnerability represents a critical convergence between infrastructure modernization (layered proxy-based security) and legacy application server design assumptions. Organizations that deployed reverse proxies to centralize authentication and apply security policies now face the possibility that this security model is weaker than intended. The architectural assumption—that the backend can trust requests validated by the proxy—collapses if attackers can circumvent the proxy. For operations teams, patch urgency reflects a fundamental test of vulnerability management maturity and cross-functional coordination.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Security and Risk Leaders</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">The vulnerability exposes attacks that exploit the seam between infrastructure components—a threat category most organizations have not adequately modeled. Path normalization is typically treated as a solved problem, managed transparently by frameworks. This vulnerability demonstrates that transparency masks critical divergence. Organizations must audit whether proxy and backend systems are enforcing path equivalence or merely assuming identical interpretation. Compliance implications are significant across financial services, healthcare, and government sectors where WebLogic has deep installed base.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Application Development and Architecture Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">This vulnerability validates a fundamental secure design principle: authentication boundaries must be enforced at multiple layers, and no single component should enforce authentication without verification at the point of resource access. Organizations relying on reverse proxies for authentication without secondary validation in the backend application are particularly exposed. Architecture reviews must examine where authentication trust is placed and whether the backend meaningfully validates authentication context or merely trusts proxy headers.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Executive Leadership and CISOs</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">This vulnerability signals a broader pattern in hybrid cloud and modern infrastructure: security controls designed in different eras (legacy application servers protected by modern proxies) create translation attacks at their interface—an underestimated attack surface. Organizational readiness to respond indicates maturity in vendor risk management, cross-functional incident response, and infrastructure modernization strategy. Delayed patching or inadequate compensating controls becomes a governance failure.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Supply Chain and Managed Services</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">MSPs and cloud integrators must assess whether internal WebLogic deployments are vulnerable and whether remediation timelines meet customer obligations. Disclosure and liability conversations must begin immediately. The vulnerability affects not only direct WebLogic users but organizations whose data flows through WebLogic-based managed services.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Detection and Visibility Requirements:</strong> Organizations must immediately establish multi-layer detection capabilities. Reverse proxy access logs should be analyzed for path normalization indicators: double-encoding sequences, mixed-case paths in protected endpoints, unusual trailing slash usage, and suspicious authentication header patterns. WebLogic application logs must be examined for authentication bypass signatures—specifically, requests triggering authentication failures at the application level but accessing protected resources successfully. WAF logs should be reviewed for both triggered and bypassed rules. Network segmentation monitoring should track unexpected traffic patterns reaching the WebLogic backend. Signature-based detection should be deployed identifying malformed path sequences, suspicious header injection, and known PoC structures. Behavioral anomaly detection is equally important: sudden increases in 403/401 responses followed by 200 OK to the same path warrant investigation.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Patch and Configuration Management Constraints:</strong> Oracle's January 2026 Critical Patch Update includes patches across affected WebLogic versions. However, patch deployment in production is constrained by compatibility validation, rollback procedures, and version dependencies. Organizations must first conduct complete discovery and version identification, as patch applicability varies. Configuration auditing must precede patching: examining reverse proxy settings, WebLogic security realm configurations, header handling rules, and path normalization parameters. Patch compatibility testing in non-production environments is mandatory. Rushed patching that breaks dependent applications creates business pressure to roll back, leaving systems vulnerable. Legacy system constraints are significant: end-of-life WebLogic versions may lack patches, requiring evaluation of upgrade feasibility or reliance on compensating controls.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Compensating Controls and Hardening:</strong> While patches are deployed, organizations must implement compensating controls. WAF rules should explicitly validate path normalization: reject double-encoding sequences, unusual case mixing in protected paths, and suspicious header patterns. Rate limiting should trigger on exploitation patterns. Reverse proxy hardening requires explicit early path validation: proxies should canonicalize paths early in processing, reject normalization failures, and strip or validate authentication-relevant headers before passing requests to backends. Network segmentation should restrict backend access to the proxy only; direct WebLogic connections from unexpected source IPs should be rejected or heavily monitored. Authentication verification layering—multi-factor authentication or contextual checks even for proxy-authenticated requests—provides defense-in-depth reducing exploitation utility. Monitoring thresholds must balance detection sensitivity and alert fatigue.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Maturity Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul><li>1 - Identify whether your organization runs Oracle WebLogic Server; determine versions and reverse proxy solutions in use; document infrastructure topology</li>
+        <li>2 - Obtain patches from Oracle's Critical Patch Update (January 2026 or later); deploy to non-production environments first, test for application compatibility, then deploy to production with priority on internet-facing systems</li>
+        <li>3 - Verify successful patch application through version checks; enable basic WebLogic logging and review logs weekly for suspicious access patterns</li>
+        <li>4 - Alert on any 403 responses followed by successful access to the same resource path</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Intermediate Maturity Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with established security programs and multi-system environments.</p>
+      <ul><li>1 - Conduct complete asset inventory of WebLogic deployments across on-premises, cloud, and hybrid environments; identify dependencies and map reverse proxy architecture</li>
+        <li>2 - Deploy patches on a staged schedule, rolling out to lower-risk systems first with detailed rollback procedures; conduct security configuration audit of reverse proxy-to-backend authentication</li>
+        <li>3 - Implement WAF rules to detect and block exploitation attempts; deploy enhanced monitoring correlating proxy and WebLogic logs to identify authentication bypass attempts</li>
+        <li>4 - Develop CVE-2026-21962-specific incident response procedures; conduct targeted penetration testing of proxy-to-backend authentication flows</li>
+        <li>5 - Evaluate centralized authentication services (OAuth 2.0, SAML, Kerberos) to replace per-application proxy authentication; assess application modernization opportunities to eliminate WebLogic dependency</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Advanced Maturity Organizations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with sophisticated security operations and cross-functional governance.</p>
+      <ul><li>1 - Activate incident response protocols; query proxy, WAF, and threat intelligence logs to assess current and historical exploitation risk; establish cross-functional taskforce</li>
+        <li>2 - Execute parallel patching and hardening: deploy patches while simultaneously hardening proxy configurations, implementing WAF rules, and enabling advanced monitoring</li>
+        <li>3 - Conduct forensic analysis for prior exploitation indicators; develop detailed technical briefing for executive leadership quantifying risk exposure and remediation timeline</li>
+        <li>4 - Conduct comprehensive architectural review of authentication boundary design across all systems; implement zero-trust security model elements eliminating reliance on proxy-layer authentication</li>
+        <li>5 - Develop security validation framework preventing future proxy-backend configuration drift; engage Oracle on vendor relationship management to assess vulnerability disclosure and patching processes</li>
+        <li>6 - Develop vulnerability management automation continuously validating proxy-backend security alignment; establish threat intelligence integration for real-time exploitation detection; execute application modernization roadmap</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2026-21962 represents more than a single vulnerability in Oracle WebLogic Server; it exemplifies a category of attack for which modern organizations are inadequately prepared—attacks that exploit the interface between security components rather than the components themselves. Reverse proxies were deployed to strengthen security posture through centralized authentication and policy enforcement. This vulnerability demonstrates that centralization is only effective if all systems downstream interpret requests identically.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The pathway to institutional resilience is clear: organizations must patch urgently, harden configurations immediately, and audit architectural assumptions methodically. Yet the deeper imperative is recognizing that authentication assurance is not a property of individual components but of the entire request processing chain. Path normalization, header handling, and trust boundary enforcement must be consistent end-to-end, with verification at multiple points. This vulnerability is a reminder that infrastructure security depends on precision, cross-team coordination, and sustained attention to details that defenders often take for granted.</p>
+    <div class="pull-quote">"Institutional resilience is not measured in architectural design alone, but in the speed and precision with which organizations detect, contain, and remediate when assumptions fail."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2026-21962</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">9.1 (High) - CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">Authentication Bypass; Path Normalization Divergence</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">January 2026 (Oracle Critical Patch Update); Active exploitation confirmed August 2026</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Weaponized by opportunistic and organized threat groups; global scanning patterns with concentrated targeting; supply chain attack potential via managed service providers</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Network-based HTTP request manipulation; no user interaction required; no authentication required; no privileged access required for initial exploitation</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Linux, Windows, Unix (any operating system running Oracle WebLogic Server)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Oracle WebLogic Server 12.2.1.x, 14.1.1.x, and later versions</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Web-facing applications behind reverse proxies; hybrid cloud deployments; multi-tenant SaaS environments; on-premises data centers; managed service provider infrastructure; supply chain integration points</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">January 2026 (disclosure) to present; remains open indefinitely for unpatched deployments</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
