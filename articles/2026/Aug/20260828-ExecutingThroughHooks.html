@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Executing Through Hooks: Analyzing Diffpatch API Flaws in Gitea Remote Code Execution (CVE-2026-60004)</title>
+<meta property="og:title" content="Executing Through Hooks: Analyzing Diffpatch API Flaws in Gitea Remote Code Execution (CVE-2026-60004)"/>
+<meta property="og:description" content="Gitea versions prior to 1.27.1 contain a critical vulnerability in the Diffpatch API that permits unauthenticated remote code execution through specially crafted patch payloads processed by repository hooks. The flaw exploits inadequate input validation in the patch processing pipeline, allowing attackers to inject arbitrary commands that execute with repository-level permissions."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/ExecutingThroughHooks.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Aug/20260828-ExecutingThroughHooks.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Executing Through Hooks: Analyzing Diffpatch API F…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Executing Through Hooks: Analyzing Diffpatch API Flaws in Gitea Remote Code Execution (CVE-2026-60004)</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">Gitea RCE Vulnerability</span>
+      <span class="tag-badge">Supply Chain Attack</span>
+      <span class="tag-badge">Patch Injection</span>
+      <span class="tag-badge">CI/CD Infrastructure Risk</span>
+      <span class="tag-badge">Git Platform Security</span>
+      <span class="tag-badge">Diffpatch API Flaw</span>
+      <span class="tag-badge">DevOps Security</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-critical"><strong>Severity:</strong> Critical</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: August 28, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/ExecutingThroughHooks.png" alt="Executing Through Hooks: Analyzing Diffpatch API Flaws in Gitea Remote Code Execution (CVE-2026-60004) — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">Gitea versions prior to 1.27.1 contain a critical vulnerability in the Diffpatch API that permits unauthenticated remote code execution through specially crafted patch payloads processed by repository hooks. The flaw exploits inadequate input validation in the patch processing pipeline, allowing attackers to inject arbitrary commands that execute with repository-level permissions.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> Active exploitation has been confirmed in the wild as of August 27, 2026. Organizations operating self-hosted Gitea instances face immediate infrastructure compromise risk; patching to version 1.27.1 or later is the primary remediation pathway. Interim detection and forensic review of hook execution logs should commence within 24 hours of this publication.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> Gitea versions prior to 1.27.1 contain an unrestricted code execution flaw in the Diffpatch API that bypasses authentication boundaries when malicious patches are processed through pre/post-commit hook mechanisms, enabling attackers to achieve complete infrastructure compromise without legitimate repository access.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2026-60004 was reported to the Gitea development team on August 24, 2026, through coordinated disclosure protocols. Maintainers confirmed the vulnerability and released a remediation patch within 48 hours as version 1.27.1 on August 27, 2026. Public disclosure occurred on August 26, 2026, following CVE assignment and vendor notification. Active exploitation in the wild was confirmed within 24 hours of public disclosure—a compressed timeline indicating either concurrent discovery by threat actors or opportunistic exploitation of publicly accessible instances.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The Diffpatch API processes patch files for merge request validation, conflict resolution, and repository patching operations. The vulnerability arises from inadequate input sanitization when patch content is passed to hook execution contexts. When a specially crafted patch containing embedded shell metacharacters or command injection sequences is submitted to the API, the content is processed without sufficient escaping before being passed to hook subprocesses.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">An attacker constructs a malformed diff file containing legitimate patch syntax interspersed with shell commands. Upon submission to the Diffpatch API endpoint, Gitea's patch processing pipeline invokes configured hooks. If hooks are implemented as shell scripts or invoke external tools without proper argument escaping, the embedded commands execute within the hook subprocess, inheriting the Gitea process's permission scope.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">All Gitea versions prior to 1.27.1 are vulnerable across diverse environments: bare-metal Linux servers, containerized deployments, Windows Server installations, and cloud-hosted self-managed instances. Gitea Cloud (the vendor-hosted SaaS offering) is unaffected, as it operates patched versions.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">Infrastructure and DevOps Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">This vulnerability creates a direct pathway to supply chain compromise. Gitea instances serve as the authoritative source for source code repositories, which feed directly into build pipelines, deployment orchestration, and production infrastructure. Compromise of a Gitea instance enables attackers to inject malicious code into source repositories, which subsequently propagates through CI/CD automation into built artifacts and deployments. Unlike external supply chain compromises, this vulnerability enables internal code poisoning—attackers can modify the organization's own source code with the organization's own build infrastructure as the distribution mechanism.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Security and Risk Management Leadership</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Gitea integration points throughout DevOps infrastructure multiply the impact of compromise. Compromised repositories feed directly into build systems, transforming the build pipeline from a security boundary into a vector for organization-wide infrastructure compromise. Gitea instances frequently contain or reference sensitive credentials including SSH keys, API tokens, database connection strings, and cloud provider credentials. A compromised instance grants direct access to these secrets, enabling lateral movement to production databases, cloud infrastructure, artifact repositories, and dependent services.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Development Teams and Repository Administrators</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Repositories contain proprietary algorithms, security implementation details, business logic, and architectural information. Exfiltration of source code represents loss of competitive advantage, exposure of vulnerabilities in proprietary systems, and potential licensing violations if code includes third-party components. The exfiltration scope is entire repositories, not individual files. Additionally, Gitea occupies a trusted network position with elevated access to development systems, CI/CD infrastructure, artifact repositories, and production deployment systems. A compromised instance becomes a beachhead for pivoting laterally throughout the organization's infrastructure.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Compliance and Legal Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">A compromised Gitea instance represents a material breach of data confidentiality and integrity with significant regulatory consequences. Source code is typically classified as confidential proprietary information; unauthorized access triggers breach notification requirements under data protection regulations including GDPR, CCPA, HIPAA, and industry-specific standards. Supply chain compromise carries additional regulatory weight if malicious code is distributed through software artifacts. Audit trail integrity is compromised if attackers modify commit history or delete logs, which may constitute a control failure requiring regulatory disclosure.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (0–24 Hours):</strong> Conduct immediate review of Diffpatch API logs for the preceding 30 days, analyzing all HTTP requests to Gitea API endpoints related to patch submission, merge request diffing, or patch application. Prioritize requests from unexpected IP addresses, requests using known attack tools, and requests occurring outside normal business hours. Enable detailed logging of hook execution and review logs for commands executed outside expected workflows. Conduct rapid review of repository commit history for the preceding 30 days, flagging commits with unusual metadata or suspicious code patterns. Review Gitea application logs for outbound connections from the Gitea process to external IP addresses, particularly during suspected exploitation windows.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short-term (0–72 Hours):</strong> Conduct an authoritative inventory of all Gitea deployments across the organization, documenting version numbers, deployment platforms, network exposure, and authentication requirements. Cross-reference all versions prior to 1.27.1 as confirmed vulnerable. For each identified Gitea instance, confirm network reachability from untrusted networks and test Diffpatch API endpoint accessibility without authentication. Document authentication posture and hook configurations across repositories. Verify compatibility of version 1.27.1 with existing deployments by reviewing release notes and testing in non-production environments. Prepare change management documentation for production patching, including rollback procedures and coordinated downtime windows.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Medium-term (1–2 Weeks):</strong> Execute staged production patching to version 1.27.1 or later across all vulnerable instances, monitoring for regressions after each deployment. Conduct post-patch verification to confirm Diffpatch API functionality, hook execution, merge request operations, and CI/CD integration across all patched instances. Implement enhanced monitoring rules for ongoing detection of similar vulnerabilities and exploitation attempts. Review and update hook execution policies across all repositories, disabling unnecessary hooks and implementing code review processes for hook changes. Conduct security awareness communication to development and DevOps teams explaining the vulnerability and guidance on identifying indicators of compromise.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Strategic (Ongoing):</strong> Establish a Gitea version management policy defining maximum time-to-patch for critical vulnerabilities (e.g., 30 days), standard patches (90 days), and minor updates. Incorporate Gitea deployments into regular security assessments and automated vulnerability scanning. Document minimum security requirements for Gitea deployments including disabled unnecessary features, authentication policies, logging requirements, and monitoring requirements. Define incident response procedures for Git infrastructure compromises, including escalation procedures, forensic preservation requirements, and stakeholder notification protocols. Establish a supply chain integrity program to detect compromised source code, including commit signature validation, code integrity verification, and anomaly detection in build artifacts.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul><li>1 - Inventory all Gitea deployments across infrastructure. Document hostname, version, deployment platform, and network exposure. Use network scanning and directory services to identify instances if deployment tracking is incomplete.</li>
+        <li>2 - Test network accessibility of each instance from external networks. If any instance is unexpectedly public-facing, restrict access immediately.</li>
+        <li>3 - Confirm Diffpatch API accessibility without authentication. If successful, document the instance as high-risk and prioritize for urgent patching.</li>
+        <li>4 - Enable detailed logging for Diffpatch API endpoints and hook execution. Establish log retention sufficient for forensic review with a minimum of 30 days.</li>
+        <li>5 - Establish incident response contact escalation with infrastructure and DevOps teams. Communicate the critical severity and urgent patching requirement.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Intermediate Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with mature security operations and formalized change management.</p>
+      <ul><li>1 - Conduct forensic review of Gitea logs, commit history, and hook execution logs for the preceding 30 days. Search for indicators of compromise: anomalous commits, unexpected hook execution, suspicious API requests. Preserve logs in a secured location for potential incident investigation.</li>
+        <li>2 - Review commits to security-critical code, build configurations, deployment scripts, and sensitive business logic for anomalies. If suspicious commits are identified, conduct deeper forensic analysis with version control history review and code comparison.</li>
+        <li>3 - Deploy patched version to test environment and execute validation of patch submission workflow, merge request functionality, hook execution, and CI/CD integration. Document test results thoroughly.</li>
+        <li>4 - Prepare change management documentation for production patching, including rollback procedures, communication templates, and coordinated downtime windows.</li>
+        <li>5 - If immediate patching is infeasible due to change management constraints, implement compensating controls: network segmentation, API access restriction, hook disabling, and enhanced monitoring with real-time alerting.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Advanced Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with comprehensive security programs and automated infrastructure management.</p>
+      <ul><li>1 - Execute staged production patching to version 1.27.1 or later across all vulnerable instances. Monitor for regressions after each deployment and validate functionality across production environments.</li>
+        <li>2 - Conduct post-patch verification: confirm Diffpatch API functionality, hook execution, merge request operations, and CI/CD integration across all patched instances. Validate against pre-patch baseline behavior.</li>
+        <li>3 - Implement enhanced monitoring rules for ongoing detection of similar vulnerabilities and exploitation attempts. Create detection logic for anomalous API requests, suspicious hook execution patterns, and unexpected repository modifications.</li>
+        <li>4 - Review and update hook execution policies across all repositories. Disable unnecessary hooks; implement hook code review processes similar to production code review. Consider migrating critical hooks to external CI/CD systems.</li>
+        <li>5 - Conduct security awareness communication to development and DevOps teams explaining the vulnerability, patch importance, and guidance on identifying indicators of compromise.</li>
+        <li>6 - Establish a Gitea version management policy defining maximum time-to-patch for critical vulnerabilities, standard patches, and minor updates. Automate patch notifications and tracking through infrastructure management systems.</li>
+        <li>7 - Incorporate Gitea deployments into regular security assessments. Scan for known vulnerabilities as part of automated security scanning. Integrate scanning into infrastructure-as-code validation pipelines.</li>
+        <li>8 - Define and document minimum security requirements for Gitea deployments: disabled unnecessary features and APIs, authentication policies, logging requirements, and monitoring requirements.</li>
+        <li>9 - Develop a comprehensive Git infrastructure incident response playbook defining escalation procedures, forensic preservation requirements, stakeholder notification protocols, and communication templates. Conduct tabletop exercises to validate the playbook.</li>
+        <li>10 - Establish a supply chain integrity program to detect compromised source code, including commit signature validation, code integrity verification, and anomaly detection in build artifacts. Coordinate with application security teams to quarantine artifacts built from potentially compromised repositories.</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2026-60004 exemplifies the critical vulnerability of modern software development infrastructure to supply chain attack vectors. The compression of attack complexity—from unauthenticated API request to arbitrary infrastructure code execution—underscores the necessity of treating Git platforms with the same security rigor applied to production systems. Organizations that have not yet patched to version 1.27.1 operate under active exploitation threat.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Remediation requires not only rapid patching but also forensic review, architectural hardening, and sustained monitoring. This vulnerability reinforces the institutional imperative to treat source code integrity, infrastructure access control, and patch velocity as foundational components of organizational resilience. The path forward is clear: patch immediately, verify integrity of repositories, and establish defensive posture against future supply chain attacks targeting development infrastructure.</p>
+    <div class="pull-quote">"Patch immediately, verify integrity of repositories, and establish defensive posture against future supply chain attacks targeting development infrastructure."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2026-60004</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">9.8 (CRITICAL) - CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">CWE-94: Improper Control of Generation of Code ('Code Injection')</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">August 26, 2026</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Active exploitation confirmed in the wild as of August 27, 2026</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Network-accessible HTTP/HTTPS API; Diffpatch endpoint; Patch submission mechanism; Unauthenticated exploitation possible depending on instance configuration</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Linux (bare metal, virtual machines), Docker, Kubernetes, Windows Server</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Gitea (Open Source Git Service) - All versions prior to 1.27.1</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Self-hosted Git repositories, DevOps infrastructure, CI/CD integration, on-premises deployments</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">August 26, 2026 – Ongoing until patched by individual organizations; Patch release date August 27, 2026</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
