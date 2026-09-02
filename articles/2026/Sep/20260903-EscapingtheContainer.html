@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Escaping the Container: Analyzing Environment Variable Injection in Coolify's Managed Host Execution (CVE-2026-84694)</title>
+<meta property="og:title" content="Escaping the Container: Analyzing Environment Variable Injection in Coolify's Managed Host Execution (CVE-2026-84694)"/>
+<meta property="og:description" content="Coolify versions prior to 4.2.0 contain a critical vulnerability in their managed host execution interface that permits unauthenticated remote code execution on underlying infrastructure. The flaw stems from insufficient input validation in environment variable key assignment mechanisms, allowing attackers to inject operating system commands that bypass container isolation boundaries and execute with host-level privileges."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/EscapingtheContainer.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Sep/20260903-EscapingtheContainer.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Escaping the Container: Analyzing Environment Vari…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Escaping the Container: Analyzing Environment Variable Injection in Coolify's Managed Host Execution (CVE-2026-84694)</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">Container Security</span>
+      <span class="tag-badge">Remote Code Execution</span>
+      <span class="tag-badge">Command Injection</span>
+      <span class="tag-badge">Infrastructure Compromise</span>
+      <span class="tag-badge">Coolify Vulnerability</span>
+      <span class="tag-badge">Orchestration Platform Risk</span>
+      <span class="tag-badge">DevOps Security</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-critical"><strong>Severity:</strong> Critical</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: September 3, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/EscapingtheContainer.png" alt="Escaping the Container: Analyzing Environment Variable Injection in Coolify's Managed Host Execution (CVE-2026-84694) — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">Coolify versions prior to 4.2.0 contain a critical vulnerability in their managed host execution interface that permits unauthenticated remote code execution on underlying infrastructure. The flaw stems from insufficient input validation in environment variable key assignment mechanisms, allowing attackers to inject operating system commands that bypass container isolation boundaries and execute with host-level privileges.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> For organizations deploying Coolify as a container orchestration and deployment platform—particularly managed service providers operating multi-tenant infrastructures—this represents a foundational compromise vector affecting all deployed containerized applications. The vulnerability is network-accessible without authentication requirements, has a CVSS score of 9.8, and remains exploitable across all installations running pre-4.2.0 versions. Organizations should immediately inventory their Coolify deployments, prioritize upgrades to v4.2.0 or later, and implement enhanced monitoring for exploitation indicators during the remediation window.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> Environment variable key parameters in Coolify's managed host execution interface are susceptible to operating system command injection, enabling unauthenticated attackers to escape container isolation boundaries and execute arbitrary code on underlying host systems with complete impact on system confidentiality, integrity, and availability.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The environment variable injection vulnerability in Coolify was identified through responsible disclosure procedures and resolved in v4.2.0. The flaw affects all versions released prior to this patch, indicating the vulnerable code persisted across multiple release cycles. The Coolify development team acknowledged the vulnerability, prioritized remediation, and published v4.2.0 within standard patch timelines.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerability exists in Coolify's interface for managing environment variables on host systems executing containerized workloads. When administrators assign environment variable key-value pairs through the management interface, the application processes user-supplied key parameters without sufficient input validation or sanitization. Specifically, the system fails to neutralize shell metacharacters commonly used in command injection attacks—including pipes (|), command substitution syntax, backticks, logical operators (&amp;&amp;, ||), and command terminators (;, newline).</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">An attacker crafting a malicious environment variable key can embed operating system commands within the parameter. When Coolify's management system processes this input, the underlying shell interprets and executes the embedded commands with the privileges of the host system process running the container management daemon—typically root or an equivalent highly privileged service account. This execution occurs on the underlying host operating system, not within containerized contexts, enabling complete bypass of container isolation mechanisms.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerable endpoint is accessible through Coolify's management interface API, typically exposed on HTTP or HTTPS ports configured during deployment. Organizations exposing this interface to untrusted networks—including internet-facing deployments, multi-tenant SaaS platforms, or infrastructure accessible to external development teams—face direct exploitation risk. Network connectivity to the Coolify API endpoint is the sole precondition; no prior authentication, account compromise, or system access is necessary.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">Container Infrastructure Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Container security depends fundamentally on process isolation: containerized applications run within bounded execution contexts, unable to directly access the host operating system or sibling containers. This isolation relies on kernel-level security mechanisms including namespaces, cgroups, and SELinux policies. The vulnerability bypasses container isolation entirely by executing commands directly on the host, circumventing all application-layer and kernel-level isolation controls. An attacker need not compromise individual application instances or exploit application-specific vulnerabilities. Instead, they access the foundational orchestration platform, enabling compromise of the infrastructure layer beneath all containerized workloads.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Managed Service Providers and DevOps Organizations</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Coolify serves multiple deployment patterns across the container ecosystem. Self-hosted organizations operate Coolify on internal infrastructure, creating organization-wide risk. Managed service providers and hosting companies integrate Coolify into multi-tenant SaaS platforms, where a single compromise affects all customer applications simultaneously. If Coolify hosts deployment automation—including container builds, artifact publishing, or live application deployment—an attacker gains control over the software delivery pipeline. This enables malicious code modification, injection of backdoors into containerized applications, or exfiltration of intellectual property and secrets stored in deployment configurations.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Compliance and Risk Management Leadership</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Organizations operating under compliance frameworks such as SOC 2 Type II, FedRAMP, PCI-DSS, or HIPAA face significant violations if infrastructure compromise occurs. These frameworks require demonstrable access controls, audit logging, and technical safeguards preventing unauthorized system access. Host-level compromise from an unauthenticated network vector indicates control failure across multiple compliance domains. Breach notification requirements cascade through managed service environments, requiring providers to notify all customer organizations whose data may have been affected by the compromise.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (0–24 Hours):</strong> The vulnerability affects all Coolify installations running versions prior to v4.2.0, with no configuration-dependent exceptions or mitigations. Coolify's open-source distribution and broad adoption across DevOps tooling ecosystems means vulnerable versions remain deployed across organizations of all sizes and industries. Self-hosted instances within enterprises, small and mid-sized software companies using Coolify for deployment automation, and managed service providers offering Coolify-based hosting all face exposure. Exploitation attempts create identifiable forensic signatures including shell metacharacters or command substitution syntax in environment variable key parameters. Host-level forensic indicators include unexpected command execution with elevated privileges originating from the Coolify process.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short-Term (24 Hours–7 Days):</strong> Upgrading to Coolify v4.2.0 is the primary remediation pathway, though the upgrade process requires careful validation to prevent service disruption. Organizations must verify v4.2.0 compatibility with current infrastructure, container runtime versions, and application configurations. Dependency compatibility—particularly interactions between Coolify and orchestration platforms like Kubernetes, Docker Swarm, or managed container services—should be validated in staging environments before production deployment. Many organizations cannot tolerate unplanned downtime for infrastructure platform upgrades; zero-downtime upgrade feasibility depends on deployment architecture and high-availability deployment topology.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Medium-Term (7–30 Days):</strong> Organizations unable to immediately upgrade should implement defensive measures reducing exploitation risk during the remediation window. Network segmentation—restricting Coolify management interface access to trusted networks or authorized personnel—significantly reduces exploitation likelihood. Placing the management interface behind a private network, VPN, or jump host eliminates internet-facing exposure if currently deployed. Host-level command execution monitoring and alerting enable rapid detection of exploitation attempts. If Coolify is deployed as a managed service supporting multiple customer organizations, assess whether customers require evidence of security controls and vulnerability management practices.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Long-Term (30+ Days):</strong> Establish a formal version lifecycle management program for Coolify, including upgrade frequency, patch testing procedures, and deployment timelines. Define maximum acceptable duration between release and deployment of security patches. Conduct a red team or penetration testing exercise simulating environment variable injection attacks against your Coolify infrastructure to validate detection capabilities, response procedures, and recovery processes. Evaluate whether your risk tolerance aligns with the vulnerability exposure inherent in the open-source deployment model and assess whether architectural alternatives or managed services better align with security requirements.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul><li>1 - Conduct immediate inventory of all Coolify installations, documenting deployment location, version number, and number of containerized applications per instance. Prioritize instances exposed to untrusted networks.</li>
+        <li>2 - Enable enhanced logging on all identified Coolify instances with particular focus on API endpoint logging for environment variable assignment operations. Redirect logs to centralized collection infrastructure.</li>
+        <li>3 - Establish an isolated staging environment replicating production Coolify configuration and deploy v4.2.0 to validate compatibility with existing infrastructure and applications before production deployment.</li>
+        <li>4 - Execute phased upgrades to v4.2.0, prioritizing instances exposed to untrusted networks and supporting the most critical applications. Implement rolling upgrade procedures if high availability is required.</li>
+        <li>5 - Conduct forensic analysis of Coolify API logs and host system logs covering the vulnerability exposure window, searching for indicators of exploitation attempts including shell metacharacters in environment variable parameters.</li>
+        <li>6 - Restrict Coolify management interface access to trusted networks through network segmentation, VPN, or jump host placement if not already implemented.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Advanced Security Operations</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with dedicated security operations and threat detection capabilities.</p>
+      <ul><li>1 - Activate formal incident response procedures if external, unauthenticated access to Coolify management interfaces is confirmed. Establish incident command structure and initiate evidence preservation.</li>
+        <li>2 - Implement container runtime monitoring tools (Falco, Sysdig, Wazuh) configured to alert on unexpected shell spawning, privileged process execution, or environment variable manipulation for rapid detection of exploitation attempts.</li>
+        <li>3 - Conduct comprehensive security-focused architectural review of Coolify deployment topology, network access controls, authentication mechanisms, and API token management. Implement role-based access control and credential rotation procedures.</li>
+        <li>4 - Integrate continuous vulnerability scanning for Coolify instances within your environment and establish automated alerting when instances fall behind current release versions or security patches are identified.</li>
+        <li>5 - Develop or update incident response playbooks addressing container escape and host compromise scenarios, define escalation procedures, and conduct tabletop exercises with incident response and infrastructure teams.</li>
+        <li>6 - Integrate Coolify security advisories into threat intelligence feeds and vulnerability management platforms. Subscribe to release announcements and establish procedures for expedited patch deployment of critical vulnerabilities.</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Enterprise Risk and Compliance Programs</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with comprehensive security programs, compliance requirements, and third-party service management.</p>
+      <ul><li>1 - Establish formal version lifecycle management program for Coolify including upgrade frequency, patch testing procedures, deployment timelines, and maximum acceptable duration between release and security patch deployment.</li>
+        <li>2 - Conduct red team or penetration testing exercise simulating environment variable injection attacks against your Coolify infrastructure. Measure time-to-detection, time-to-response, and time-to-recovery. Identify and remediate gaps in visibility or procedural controls.</li>
+        <li>3 - If Coolify is deployed as a managed service supporting multiple customer organizations, conduct assessment of customer compliance requirements (SOC 2, FedRAMP, etc.) and identify additional security assessments or vendor security questionnaires necessary to maintain service agreements.</li>
+        <li>4 - Evaluate alternative container orchestration platforms and managed services to assess whether risk tolerance aligns with open-source deployment model vulnerabilities and whether alternatives better align with security and compliance requirements.</li>
+        <li>5 - Implement advanced threat hunting program focused on historical forensic analysis of pre-patch exposure period, looking for evidence of exploitation, persistence mechanisms, lateral movement, or data exfiltration.</li>
+        <li>6 - Establish formal vendor security assessment and management program for container orchestration platforms and foundational infrastructure dependencies, including periodic re-evaluation of alternatives and emerging threats.</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Environment variable injection in Coolify exposes a critical vulnerability in the foundational infrastructure layer underlying modern container deployments. The incident demonstrates that container security extends beyond application code to the orchestration platforms enabling containerized infrastructure. For organizations building institutional resilience against evolving threats, this vulnerability underscores the necessity of comprehensive supply chain risk assessment, particularly for foundational infrastructure dependencies.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Patching to v4.2.0 is essential, but remediation extends beyond version upgrades: it encompasses network segmentation, detection engineering, forensic readiness, and governance frameworks ensuring that future vulnerabilities in critical infrastructure components do not remain unpatched. The urgency is concrete—the vulnerability window remains open for all pre-4.2.0 deployments, and the simplicity of exploitation means risk exposure continues daily until remediation is complete.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Organizations that integrate this incident into their vulnerability management, incident response, and architectural review processes transform tactical patching into strategic institutional learning, decrypting emerging risks and strengthening digital discipline across their infrastructure.</p>
+    <div class="pull-quote">"Container security extends beyond application code to the orchestration platforms enabling containerized infrastructure—and this vulnerability demonstrates why supply chain risk assessment for foundational infrastructure dependencies is essential to institutional resilience."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2026-84694</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">9.8 (Critical)</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">CWE-78: Improper Neutralization of Special Elements used in an OS Command (OS Command Injection)</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">Coordinated disclosure aligned with v4.2.0 patch availability</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Limited public exploitation at publication; disclosure preceded mass exploitation campaigns</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Network (HTTP/HTTPS API); unauthenticated access; environment variable key parameter injection via API request</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Linux host operating systems; Docker, Kubernetes, containerd container runtimes</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">Coolify container management and deployment platform; affected versions prior to v4.2.0</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Self-hosted Coolify instances, managed Coolify SaaS deployments, multi-tenant hosting environments, CI/CD infrastructure platforms</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">From initial vulnerable code release through v4.2.0 publication; organizations operating pre-4.2.0 versions remain exposed until patched</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

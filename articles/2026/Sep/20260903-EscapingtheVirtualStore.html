@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CyberSense | Escaping the Virtual Store: Analyzing Path Traversal and Containment Bypass in pnpm Package Installation (CVE-2026-82393, CVE-2026-82392)</title>
+<meta property="og:title" content="Escaping the Virtual Store: Analyzing Path Traversal and Containment Bypass in pnpm Package Installation (CVE-2026-82393, CVE-2026-82392)"/>
+<meta property="og:description" content="Two critical path traversal vulnerabilities in pnpm's dependency installation mechanism (CVE-2026-82393 and CVE-2026-82392) permit malicious actors to escape sandboxed package environments and overwrite arbitrary files on host systems through specially crafted dependency manifests. The vulnerabilities affect pnpm versions prior to the current patched release and represent a direct supply chain escalation vector for organizations across frontend development, CI/CD infrastructure, and enterprise software delivery pipelines."/>
+<meta property="og:image" content="https://cybersense.solutions/banners/EscapingtheVirtualStore.png"/>
+<meta property="og:url" content="https://cybersense.solutions/articles/2026/Sep/20260903-EscapingtheVirtualStore.html"/>
+<meta property="og:type" content="article"/>
+<link rel="icon" type="image/png" href="https://cybersense.solutions/assets/csicon.png">
+<link rel="apple-touch-icon" href="https://cybersense.solutions/assets/csicon.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+  body { background-color: #000711; background-image: radial-gradient(circle at 10% 50%, rgba(18, 37, 62, 0.25) 0%, rgba(30,60,100,0.0) 50%), radial-gradient(circle at 90% 40%, rgba(3, 117, 198, 0.15) 0%, rgba(0,150,255,0.0) 30%), linear-gradient(0deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%), linear-gradient(90deg, transparent 24%, rgba(60,60,60,0.1) 25%, rgba(60,60,60,0.1) 26%, transparent 27%); background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px; background-attachment: fixed; color: #e0e7ff; font-family: 'Inter', sans-serif; }
+  .article-container { background-color: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border-color: rgba(255,255,255,0.1) !important; }
+  .section-card { background-color: rgba(0,0,0,0.3) !important; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2); transition: transform 0.2s, box-shadow 0.2s; border-color: rgba(255,255,255,0.1) !important; }
+  .section-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
+  .text-gray-900, .text-gray-800, .text-gray-700 { color: #e0e7ff !important; }
+  .border-cyan-700 { border-color: #0e7490 !important; }
+  h1 { text-align: center; color: #ffffff !important; font-family: georgia; }
+  h2 { text-align: left; color: #2ccce1 !important; font-family: georgia; }
+  h3 { text-align: left; color: #51a3f6 !important; font-family: georgia; }
+  hr { border-top: 2px solid rgba(255,255,255,0.1) !important; margin-top: 20px !important; border-bottom: none !important; margin-bottom: 20px !important; }
+  .article-banner { width: 100%; max-height: 480px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: block; }
+  .category-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.3); border-radius: 99px; padding: 4px 16px; font-family: georgia; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+  .badge-threat { border: 1px solid #661616; background: #3C0A0A; color: #FF0303; }
+  .badge-dig { border: 1px solid #10405e; background: #1a2542; color: #f7f9fa; }
+  .special-font { font-family: georgia; }
+  .tag-badge { display: inline-flex; align-items: center; background: rgba(0,150,255,0.12); border: 1px solid rgba(0,150,255,0.3); border-radius: 99px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; color: #7dd3fc; }
+  .insight-callout { background: rgba(0,150,255,0.07); border-left: 4px solid #0080ff; border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; }
+  .insight-callout p { margin: 0; font-size: 13px; line-height: 1.6; color: #bae6fd; }
+  .classification-strip { background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px; display: flex; flex-direction: column; gap: 8px; }
+  .strip-row { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; line-height: 1.55; }
+  .strip-key { color: #f7f9fa; font-weight: 800; white-space: nowrap; flex-shrink: 0; }
+  .strip-val { color: #94a3b8; font-weight: 500; letter-spacing: 0.3px; }
+  .sev-critical { color: #f87171; font-family: georgia; }
+  .sev-high { color: #fb923c; font-family: georgia; }
+  .sev-medium { color: #4fc3f7; font-family: georgia; }
+  .sev-low { color: #3fb950; font-family: georgia; }
+  .sev-info { color: #38bdf8; font-family: georgia; }
+  .action-tier { background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 14px 18px; margin-bottom: 12px; }
+  .action-tier-label { font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #38bdf8; margin-bottom: 6px; }
+  .action-tier ul { margin: 0; padding-left: 18px; }
+  .action-tier li { font-size: 13px; line-height: 1.6; color: #e0e7ff; margin-bottom: 4px; }
+  .pull-quote { border-left: 3px solid #0080ff; padding: 12px 20px; margin: 24px 0; font-family: georgia; font-style: italic; font-size: 15px; line-height: 1.7; color: #49a2fb; }
+  .breadcrumb { font-size: 12px; color: rgba(56,189,248,0.6); }
+  .breadcrumb a { color: #38bdf8; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  .breadcrumb span { margin: 0 6px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body class="p-4 sm:p-8">
+<div class="article-container max-w-4xl mx-auto rounded-xl shadow-2xl p-6 sm:p-10 border">
+
+  <div class="flex justify-center items-center w-full py-0 mb-4">
+    <a href="https://cybersense.solutions" target="_blank" rel="noopener">
+      <img src="https://cybersense.solutions/assets/csicon.png" alt="CyberSense.Solutions" class="rounded-full shadow-xl w-20 h-20 object-cover">
+    </a>
+  </div>
+
+  <div class="breadcrumb text-center mb-3">
+    <a href="https://cybersense.solutions">Home</a>
+    <span>›</span>
+    <a href="https://cybersense.solutions/intel.html">Intel Briefing</a>
+    <span>›</span>
+    <span style="color:#e0e7ff;">Escaping the Virtual Store: Analyzing Path Travers…</span>
+  </div>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="category-badge badge-threat">&nbsp;Threat Intel</span>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <header class="mb-2">
+    <h1 class="text-3xl sm:text-4xl font-extrabold leading-tight tracking-tight mb-4">Escaping the Virtual Store: Analyzing Path Traversal and Containment Bypass in pnpm Package Installation (CVE-2026-82393, CVE-2026-82392)</h1>
+    <div class="flex flex-wrap gap-2 justify-center">
+      <span class="tag-badge">pnpm path traversal</span>
+      <span class="tag-badge">supply chain security</span>
+      <span class="tag-badge">CI/CD vulnerability</span>
+      <span class="tag-badge">container escape</span>
+      <span class="tag-badge">arbitrary file write</span>
+      <span class="tag-badge">package manager exploit</span>
+      <span class="tag-badge">DevOps security</span>
+    </div>
+  </header>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <div class="flex justify-between items-center mt-4 mb-4">
+    <span class="sev-high"><strong>Severity:</strong> High</span>
+    <span class="special-font text-gray-700 text-base font-normal">Publication Date: September 3, 2026</span>
+  </div>
+
+  <div class="mb-6">
+    <img src="https://cybersense.solutions/banners/EscapingtheVirtualStore.png" alt="Escaping the Virtual Store: Analyzing Path Traversal and Containment Bypass in pnpm Package Installation (CVE-2026-82393, CVE-2026-82392) — CyberSense.Solutions" class="article-banner">
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <div class="section-card p-6 rounded-xl border mb-4">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Executive Summary</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3">Two critical path traversal vulnerabilities in pnpm's dependency installation mechanism (CVE-2026-82393 and CVE-2026-82392) permit malicious actors to escape sandboxed package environments and overwrite arbitrary files on host systems through specially crafted dependency manifests. The vulnerabilities affect pnpm versions prior to the current patched release and represent a direct supply chain escalation vector for organizations across frontend development, CI/CD infrastructure, and enterprise software delivery pipelines.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-3"><strong style="color:#38bdf8;">Immediate actionable guidance:</strong> Organizations executing pnpm in elevated privilege contexts face heightened risk of system compromise and persistence mechanisms. Immediate priority: identify all pnpm installations across infrastructure, prioritize patches in non-root and CI/CD environments, and deploy file integrity monitoring on critical system directories to detect exploitation attempts.</p>
+    <div class="insight-callout">
+      <p><strong style="color:#38bdf8;">Key Finding:</strong> pnpm versions prior to the current patched release fail to properly validate file path resolution during dependency extraction, permitting attackers to use relative path sequences (../) and symbolic link manipulation to write files outside designated package directories, potentially compromising system binaries, configuration files, and enabling arbitrary code execution with the privilege level of the installing user.</p>
+    </div>
+  </div>
+
+  <!-- WHAT HAPPENED -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">What Happened</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">On September 3, 2026, two critical vulnerabilities in the pnpm package manager were disclosed following responsible coordination with maintainers and security advisory partners. CVE-2026-82393 and CVE-2026-82392 represent related but distinct exploitation pathways that compromise the fundamental integrity assumptions of containerized development workflows and isolated package installation environments.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2026-82393 exploits insufficient path validation in pnpm's file extraction logic during package installation. When pnpm processes package manifests, the dependency resolution mechanism fails to adequately validate file path sequences containing relative path traversal markers such as ../. This validation gap permits attackers to craft specially designed manifests that reference files located outside the intended package installation directory.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">When a victim system executes pnpm install to resolve this dependency, pnpm's extraction logic processes the path specifications without sufficient sanitization. The relative path sequences traverse upward through the directory hierarchy, escaping the sandboxed package directory and writing files to arbitrary locations on the host filesystem. Attack prerequisites are minimal but require the malicious package to enter a target's dependency chain through direct npm registry compromise, typosquatting, dependency injection, or supply chain targeting.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">CVE-2026-82392 extends path traversal capability through containment bypass exploitation. While containers provide filesystem isolation through namespacing and layering, this vulnerability enables writes that circumvent the isolation boundaries assumed by containerized build environments. When pnpm encounters symbolic links during package extraction, it follows those links without adequate verification that the target resides within the intended package directory. An attacker exploits this by crafting dependencies that reference or create symbolic links pointing outside the container or sandbox, effectively breaking the isolation layer that containerization provides.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Realistic exploitation scenarios involve typosquatting (registering package names similar to legitimate packages) or compromised legitimate packages injecting malicious dependencies through their own dependency chains, creating transitive exposure affecting all downstream consumers. In CI/CD environments, the risk is elevated because build pipelines frequently execute pnpm with elevated privileges to enable system configuration during container construction.</p>
+  </div>
+
+  <!-- WHY IT MATTERS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-6 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Why It Matters</h2>
+    
+    <h3 class="text-lg font-semibold mb-2">DevOps and Infrastructure Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">Modern DevOps practices rely fundamentally on containerization and virtual environment isolation to separate build-time activities from production systems. These vulnerabilities breach that assumption directly by permitting file writes that escape containerized environments through path traversal and symbolic link manipulation. Organizations relying on containerization as their primary security control for dependency management now face a gap between assumed and actual security posture.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Supply Chain Risk Officers and Enterprise Security Leaders</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">pnpm has achieved significant market penetration across enterprise and open-source ecosystems with integration into development workflows across financial services, technology, healthcare, and government sectors. Critically, pnpm is frequently embedded into CI/CD pipelines and infrastructure-as-code workflows where dependencies are resolved automatically during build and deployment. A single malicious package injected into the npm registry can affect all downstream consumers with rapid supply chain propagation measured in hours or days.</p>
+    <hr>
+    <h3 class="text-lg font-semibold mb-2">Application Development Teams</h3>
+    <p class="text-gray-800 text-sm leading-relaxed mb-5">The arbitrary file write capability enabled by these vulnerabilities expands the potential attack surface significantly. Attackers can target system-level files affecting multiple applications or enabling persistence mechanisms, including system binaries in /bin or /usr/bin directories, configuration files in /etc, dynamic linker cache files, SSH keys and authentication credentials, cron job schedules, and application source code repositories. When pnpm executes with elevated privilege, attackers gain capability to overwrite files protected by operating system permissions.</p>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4">Operational Implications</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Immediate (Week 1):</strong> Organizations must urgently inventory all systems executing pnpm to establish baseline exposure, identifying development machines, CI/CD pipeline agents, container build infrastructure, and automated dependency update systems. Privilege context mapping is critical to identify systems where pnpm executes as root or elevated user, representing the highest-risk scenario requiring prioritized patching. Version audits must account for pnpm installations via multiple channels including npm package registry, Homebrew, native installers, and direct binary downloads.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Short-term (Weeks 2-4):</strong> Deploy file integrity monitoring on critical system directories (/bin, /etc, /usr/bin, application configuration directories) to generate alerts when unexpected file modifications occur. Implement package repository monitoring for malicious characteristics by scanning package.json manifests for path traversal patterns. Review pnpm installation logs for suspicious activity and analyze process execution patterns on systems running vulnerable pnpm versions to identify exploitation attempts.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Medium-term (Months 2-3):</strong> Conduct comprehensive forensic analysis of systems running vulnerable pnpm versions during exposure window to determine whether malicious installations occurred. Assess whether artifacts generated on vulnerable pnpm systems should be considered potentially compromised. Establish incident response procedures specific to pnpm path traversal exploitation, including vulnerability scanning prioritization, phased patch deployment strategy, and compromise assessment workflows.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4"><strong style="color:#38bdf8;">Strategic (Ongoing):</strong> Implement zero-trust package installation with cryptographic package verification and attestation requirements. Deploy container security policies enforcing non-root pnpm execution and read-only filesystem options. Establish formal package manager security baseline with approved versions, execution context requirements, and detection requirements. Implement Supply Chain Level for Software (SLSA) framework requirements for pnpm-dependent artifacts and establish metrics for package manager vulnerability detection time and patch deployment velocity.</p>
+  </div>
+
+  <!-- RECOMMENDED ACTIONS -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Recommended Actions</h2>
+    <p class="text-gray-800 text-sm mb-4 leading-relaxed">Actions are organized by organizational security maturity. Baseline controls apply across all tiers and should be treated as immediate priorities regardless of organizational size.</p>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Baseline Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with standard security tooling and general-purpose endpoint protection.</p>
+      <ul><li>1 - Execute system-wide search for pnpm installations across all development machines and systems (which pnpm, npm list -g pnpm, verify versions)</li>
+        <li>2 - Update pnpm to current patched version immediately on all identified systems and disable automated pnpm updates until patch validation confirms stability</li>
+        <li>3 - Communicate vulnerability severity to development teams with clear patching requirements and timelines</li>
+        <li>4 - Deploy basic file integrity monitoring on system directories (/bin, /etc) using OS-native tools (auditd on Linux, Windows File Integrity Monitoring)</li>
+        <li>5 - Review installation logs for suspicious pnpm activity during exposure window and audit high-value dependencies for compromise indicators</li>
+        <li>6 - Establish pnpm version pinning policy in package.json or .npmrc to prevent unexpected version changes</li>
+        <li>7 - Document incident response procedures specific to package manager vulnerabilities and conduct workforce awareness training on supply chain risk</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Intermediate Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with established security operations, automated CI/CD, and containerized infrastructure.</p>
+      <ul><li>1 - Execute comprehensive pnpm version inventory across development and CI/CD infrastructure using automated scanning tools</li>
+        <li>2 - Identify all systems executing pnpm with elevated privilege (root, container build stages) and patch immediately with prioritization for highest-risk contexts</li>
+        <li>3 - Modify CI/CD pipeline definitions to execute pnpm as unprivileged user and implement principle of least privilege in all containerized build stages</li>
+        <li>4 - Implement file integrity monitoring with alerting on unexpected modifications and deploy package repository proxy or monitoring tools to scan manifests for path traversal patterns</li>
+        <li>5 - Configure Security Information and Event Management (SIEM) rules for pnpm path traversal attack indicators and establish forensic baseline documentation</li>
+        <li>6 - Conduct dependency audit to identify high-value or critical packages that could create cascade risk if compromised</li>
+        <li>7 - Implement Software Bill of Materials (SBOM) tooling for ongoing dependency tracking and establish vendor security advisory subscriptions for pnpm and critical dependencies</li>
+        <li>8 - Review and document incident response playbook specifically for supply chain compromise scenarios</li></ul>
+    </div>
+    <div class="action-tier">
+      <div class="action-tier-label" style="color:#38bdf8;">⬤ Advanced Maturity Environments</div>
+      <p class="text-cyan-400 text-xs px-4 mb-2 leading-relaxed">* Organizations with mature security operations, advanced threat detection, and established supply chain security programs.</p>
+      <ul><li>1 - Execute immediate pnpm inventory across enterprise infrastructure using advanced security scanning tooling with real-time inventory correlation</li>
+        <li>2 - Deploy emergency patch through automated software deployment systems with rollback capability and coordinate with threat intelligence team to monitor for in-the-wild exploitation</li>
+        <li>3 - Deploy behavioral analysis for pnpm processes capturing anomalous file access patterns, unexpected child processes, and network connectivity abnormalities</li>
+        <li>4 - Implement privileged access management (PAM) restrictions on pnpm execution in elevated contexts and deploy dynamic package manifest analysis at registry proxy or network ingress</li>
+        <li>5 - Correlate pnpm events with endpoint detection and response (EDR) telemetry for compromise indication and conduct comprehensive forensic analysis of vulnerable systems</li>
+        <li>6 - Analyze generated artifacts for malicious indicators including unexpected binaries, modified system files, and anomalous signatures; share findings with threat intelligence teams</li>
+        <li>7 - Implement Supply Chain Level for Software (SLSA) framework requirements for pnpm-dependent artifacts and establish code attestation and signed artifact verification across CI/CD pipelines</li>
+        <li>8 - Develop automated supply chain security posture monitoring for real-time visibility into pnpm vulnerability exposure and conduct tabletop exercises for supply chain compromise scenarios</li>
+        <li>9 - Establish metrics tracking package manager vulnerability detection time, patch deployment velocity, and supply chain security posture score</li></ul>
+    </div>
+  </div>
+
+  <!-- CLOSING STATEMENT -->
+  <div class="section-card p-6 rounded-xl border mb-8">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Closing Statement</h2>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">Path traversal vulnerabilities in pnpm represent not merely a technical flaw but a structural challenge to the security assumptions underlying modern DevOps practices. The ability to escape containerized package installation environments through file path manipulation underscores a fundamental principle: security controls are only as effective as their implementation details and the precision with which boundary assumptions are enforced.</p>
+    <p class="text-gray-800 text-sm leading-relaxed mb-4">The vulnerabilities in CVE-2026-82393 and CVE-2026-82392 are time-bounded—patches exist and deployment mechanisms are established. What remains is organizational execution: the discipline to inventory exposure, the rigor to prioritize patching in high-risk contexts, and the foresight to implement detection mechanisms that prevent future exploitation. Organizations that move decisively will emerge with both immediate risk reduction and strengthened supply chain security practices. Those that delay will face escalating risk as exploitation techniques mature and attacker capability increases.</p>
+    <div class="pull-quote">"Institutional resilience is built through precision execution of security fundamentals during periods of urgent pressure."</div>
+  </div>
+
+  <section class="mb-8 pb-4 border-b-4 border-cyan-700"></section>
+
+  <!-- TECHNICAL DATA -->
+  <div class="classification-strip mb-6">
+    <h2 class="text-2xl font-bold mb-4 pb-2 border-b" style="border-color:rgba(255,255,255,0.1);">Technical Data</h2>
+    <div class="strip-row"><span class="strip-key">CVE/ID:</span><span class="strip-val">CVE-2026-82393, CVE-2026-82392</span></div>
+    <div class="strip-row"><span class="strip-key">CVSS Score:</span><span class="strip-val">8.2–9.1 (High to Critical); CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:L</span></div>
+    <div class="strip-row"><span class="strip-key">Classification:</span><span class="strip-val">Path Traversal; Arbitrary File Write; Containment Bypass; Privilege Escalation (conditional on execution context); CWE-22, CWE-73, CWE-94</span></div>
+    <div class="strip-row"><span class="strip-key">Announced:</span><span class="strip-val">September 3, 2026</span></div>
+    <div class="strip-row"><span class="strip-key">Tracked Activity:</span><span class="strip-val">Exploitation reconnaissance documented in package registry scanning environments</span></div>
+    <div class="strip-row"><span class="strip-key">Attack Vectors:</span><span class="strip-val">Network (compromised package repository, typosquatting, dependency injection); Local File System (malicious package.json specifications)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Platforms:</span><span class="strip-val">Linux, macOS, Windows (platform-agnostic via Node.js runtime)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Product:</span><span class="strip-val">pnpm Package Manager (versions prior to patched release)</span></div>
+    <div class="strip-row"><span class="strip-key">Target Environment:</span><span class="strip-val">Development machines, CI/CD pipeline agents, containerized build infrastructure, Node.js runtime ecosystems</span></div>
+    <div class="strip-row"><span class="strip-key">Exposure Window:</span><span class="strip-val">From vulnerability introduction in pnpm baseline through patched version release and organizational deployment completion</span></div>
+  </div>
+
+  <section class="mb-4 pb-4 border-b-4 border-cyan-700"></section>
+
+  <footer class="mt-12 pt-6 border-t border-gray-800 text-center">
+    <div class="border-t pt-5 pb-4" style="background:linear-gradient(135deg,rgba(14,165,233,0.06),rgba(56,189,248,0.03));border-radius:8px;margin-bottom:16px;padding:16px 20px;">
+      <p style="font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#38bdf8;margin-bottom:6px;">Mission Advance</p>
+      <p style="font-size:13px;color:#F1F5F9;line-height:1.6;">CyberSense is moving to a dedicated platform. Our daily intelligence briefings, training modules, and threat radar will soon live at <a href="https://cybersense.solutions" style="color:#38bdf8;text-decoration:underline;">cybersense.solutions</a> — built for the teams that can't afford to be caught off guard.</p>
+    </div>
+    <div class="border-t pt-4 text-sm">
+      <div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;color:#ffffff;margin-bottom:2px;">CyberSense<span style="color:#00D4FF;">.Solutions</span></div>
+      <p class="mb-3 text-cyan-400" style="font-size:12px;">hello@cybersense.solutions</p>
+      <div style="display:flex;justify-content:center;gap:10px;margin-bottom:16px;">
+        <a href="https://www.linkedin.com/company/cybersense-solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">in</a>
+        <a href="https://www.facebook.com/profile.php?id=61570667370162" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:13px;font-weight:700;text-decoration:none;">f</a>
+        <a href="https://x.com/cybersensesec" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">X</a>
+        <a href="https://www.instagram.com/cybersense.solutions/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">ig</a>
+        <a href="https://www.threads.com/@cybersense.solutions" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#0f172a;color:#38bdf8;font-size:12px;font-weight:700;text-decoration:none;">tt</a>
+      </div>
+      <p style="font-size:11px;color:rgba(56,189,248,0.5);">&copy; 2026 CyberSense.Solutions. All content provided for educational and awareness purposes.<br>Veteran-Owned — <strong style="color:rgba(56,189,248,0.7);">Security awareness starts here.</strong></p>
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>
